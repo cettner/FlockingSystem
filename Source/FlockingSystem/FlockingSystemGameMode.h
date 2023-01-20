@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+
+#include "Navigation/FlockNavManager.h"
 #include "FlockingSystemGameMode.generated.h"
 
 UCLASS(minimalapi)
@@ -13,6 +15,16 @@ class AFlockingSystemGameMode : public AGameModeBase
 
 public:
 	AFlockingSystemGameMode();
+	UFlockNavManager* GetFlockManager() const;
+
+protected:
+	virtual void PostInitializeComponents() override;
+
+
+
+protected:
+	UPROPERTY(transient)
+	UFlockNavManager* FlockManager = nullptr;
 };
 
 

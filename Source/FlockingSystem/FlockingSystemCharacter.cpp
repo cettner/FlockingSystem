@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "FlockingSystemCharacter.h"
+#include "../FlockingSystemGameMode.h"
+
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
 #include "Components/DecalComponent.h"
@@ -41,11 +43,25 @@ AFlockingSystemCharacter::AFlockingSystemCharacter()
 	TopDownCameraComponent->bUsePawnControlRotation = false; // Camera does not rotate relative to arm
 
 	// Activate ticking in order to update the cursor every frame.
-	PrimaryActorTick.bCanEverTick = true;
-	PrimaryActorTick.bStartWithTickEnabled = true;
+	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bStartWithTickEnabled = false;
+
+	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
+
 }
 
-void AFlockingSystemCharacter::Tick(float DeltaSeconds)
+void AFlockingSystemCharacter::PostInitializeComponents()
 {
-    Super::Tick(DeltaSeconds);
+	Super::PostInitializeComponents();
+
+	if (HasAuthority())
+	{
+		UWorld* world = GetWorld();
+		AFlockingSystemGameMode* gm = world->GetAuthGameMode<AFlockingSystemGameMode>();
+		if (gm != nullptr)
+		{
+			gm->GetFlockManager()->RegisterFlockAgent(this);
+		}
+
+	}
 }

@@ -5,26 +5,39 @@
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
 
+#include "Interfaces/FlockAgentGoalInterface.h"
 #include "Interfaces/FlockAgentInterface.h"
 #include "Flock.generated.h"
 
-/**
- * 
- */
+
+
 UCLASS()
 class UFlock : public UObject
 {
 	GENERATED_BODY()
 
 	public:
+		virtual void InitFlock(TSet<IFlockAgentInterface*> InAgents, IFlockAgentGoalInterface * AgentGoal = nullptr);
 		virtual void UpdateFlock();
-		
-		inline const TArray<IFlockAgentInterface*>& GetAgents() const
+		virtual void ClearFlock();
+		virtual IFlockAgentGoalInterface* GetFlockGoal() const { return FlockGoal; }
+
+		virtual void AddAgent(IFlockAgentInterface* InAgent);
+		virtual bool RemoveAgent(IFlockAgentInterface* InAgent);
+
+		TSet<UObject*> GetFlockDynamicObstacles() const;
+
+		/*Returns the root Location of the Goal Object, if it exists*/
+		virtual bool GetFlockGoalLocation(FVector &OutGoalLocation) const;
+
+		inline const TSet<UObject*>& GetAgents() const
 		{
 			return FlockAgents;
 		}
 
 	protected:
-		TArray<IFlockAgentInterface*> FlockAgents;
+		TSet<UObject*> FlockAgents;
+
+		IFlockAgentGoalInterface* FlockGoal = nullptr;
 	
 };

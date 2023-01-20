@@ -5,6 +5,21 @@
 #include "../Flock.h"
 // Add default functionality here for any IRTSFlockAgentInterface functions that are not pure virtual.
 
+void IFlockAgentInterface::JoinFlock(UFlock* InFlock)
+{
+	InFlock->AddAgent(this);
+}
+
+void IFlockAgentInterface::LeaveFlock()
+{
+	UFlock* currentflock = GetFlock();
+	
+	if (currentflock != nullptr)
+	{
+		currentflock->RemoveAgent(this);
+	}
+}
+
 FVector IFlockAgentInterface::GetFlockAgentLocation() const
 {
 	return FVector();
@@ -15,6 +30,18 @@ FVector IFlockAgentInterface::GetFlockAgentDirection() const
 	return FVector();
 }
 
+float IFlockAgentInterface::GetFlockAgentRadius() const
+{
+	return 0.0f;
+}
+
+void IFlockAgentInterface::UpdateFlockParameters()
+{
+	FlockSeparation = CalcSeparation();
+	FlockAlignment = CalcAlignment();
+	FlockCohesion = CalcCohesion();
+}
+
 FVector IFlockAgentInterface::CalcSeparation()
 {
 	UFlock* flock = GetFlock();
@@ -22,12 +49,12 @@ FVector IFlockAgentInterface::CalcSeparation()
 
 	if (flock != nullptr)
 	{
-		const TArray<IFlockAgentInterface*> flockmembers = flock->GetAgents();
+		const TSet<UObject*> flockmembers = flock->GetAgents();
 
-		for (int i = 0; i < flockmembers.Num(); i++)
+		for (const UObject* const & Elem : flockmembers)
 		{
-			const IFlockAgentInterface* otheragent = flockmembers[i];
-			if (flockmembers[i] != this)
+			const IFlockAgentInterface* otheragent = CastChecked<IFlockAgentInterface>(Elem);
+			if (otheragent != this)
 			{
 				const FVector otherposition = otheragent->GetFlockAgentLocation();
 				const FVector myposition = GetFlockAgentLocation();
@@ -48,12 +75,13 @@ FVector IFlockAgentInterface::CalcAlignment()
 
 	if (flock != nullptr)
 	{
-		const TArray<IFlockAgentInterface*> flockmembers = flock->GetAgents();
+		const TSet<UObject*> flockmembers = flock->GetAgents();
 
-		for (int i = 0; i < flockmembers.Num(); i++)
+		for (const UObject* const& Elem : flockmembers)
 		{
-			const IFlockAgentInterface* otheragent = flockmembers[i];
-			if (flockmembers[i] != this)
+			const IFlockAgentInterface* otheragent = CastChecked<IFlockAgentInterface>(Elem);
+			
+			if (otheragent != this)
 			{
 				retval += otheragent->GetFlockAgentDirection();
 			}
@@ -73,12 +101,12 @@ FVector IFlockAgentInterface::CalcCohesion()
 
 	if (flock != nullptr)
 	{
-		const TArray<IFlockAgentInterface*> flockmembers = flock->GetAgents();
+		const TSet<UObject*> flockmembers = flock->GetAgents();
 
-		for (int i = 0; i < flockmembers.Num(); i++)
+		for (const UObject* const& Elem : flockmembers)
 		{
-			const IFlockAgentInterface* otheragent = flockmembers[i];
-			if (flockmembers[i] != this)
+			const IFlockAgentInterface* otheragent = CastChecked<IFlockAgentInterface>(Elem);
+			if (otheragent != this)
 			{
 				retval += otheragent->GetFlockAgentLocation();
 			}

@@ -21,14 +21,23 @@ class  IFlockAgentInterface
 	GENERATED_BODY()
 
 	// Add interface functions to this class. This is the class that will be inherited to implement this interface.
+
 public:
-	void SetFlock(UFlock* InFlock) { CurrentFlock = InFlock; };
+	virtual void JoinFlock(UFlock* InFlock);
+	virtual void LeaveFlock();
+
+public:
+	virtual void SetFlock(UFlock* InFlock) { CurrentFlock = InFlock; }
+	virtual UFlock* GetFlock() const { return CurrentFlock; }
+
+	void SetFlockAgentID(const FSetElementId InFlockID) { FlockAgentID = InFlockID; }
+	FSetElementId GetFloackAgentID() const { return FlockAgentID; }
 
 	virtual FVector GetFlockAgentLocation() const;
-
 	virtual FVector GetFlockAgentDirection() const;
+	virtual float GetFlockAgentRadius() const;
 
-	inline UFlock* GetFlock() const { return CurrentFlock; }
+	virtual void UpdateFlockParameters();
 
 public:
 	virtual FVector CalcSeparation();
@@ -40,5 +49,9 @@ public:
 protected:
 	UPROPERTY()
 	UFlock* CurrentFlock = nullptr;
+	FSetElementId FlockAgentID = FSetElementId();
 
+	FVector FlockSeparation = FVector::ZeroVector;
+	FVector FlockAlignment = FVector::ZeroVector;
+	FVector FlockCohesion = FVector::ZeroVector;
 };

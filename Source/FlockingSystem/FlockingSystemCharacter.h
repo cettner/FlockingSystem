@@ -4,23 +4,33 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+
+#include "Navigation/Interfaces/FlockAgentGoalInterface.h"
+#include "Navigation/Interfaces/FlockAgentInterface.h"
 #include "FlockingSystemCharacter.generated.h"
 
 UCLASS(Blueprintable)
-class AFlockingSystemCharacter : public ACharacter
+class AFlockingSystemCharacter : public ACharacter, public IFlockAgentInterface
 {
 	GENERATED_BODY()
 
 public:
 	AFlockingSystemCharacter();
 
-	// Called every frame.
-	virtual void Tick(float DeltaSeconds) override;
-
 	/** Returns TopDownCameraComponent subobject **/
 	FORCEINLINE class UCameraComponent* GetTopDownCameraComponent() const { return TopDownCameraComponent; }
 	/** Returns CameraBoom subobject **/
 	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+
+
+protected:
+	virtual void PostInitializeComponents() override;
+
+
+public:
+	UPROPERTY(EditAnywhere, transient)
+	AActor * PreSetFlockGoal = nullptr;
+
 
 private:
 	/** Top down camera */

@@ -23,4 +23,18 @@ AFlockingSystemGameMode::AFlockingSystemGameMode()
 	{
 		PlayerControllerClass = PlayerControllerBPClass.Class;
 	}
+
+	FlockManager = CreateDefaultSubobject<UFlockNavManager>(TEXT("NavManager"));
+}
+
+void AFlockingSystemGameMode::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+
+
+}
+
+UFlockNavManager* AFlockingSystemGameMode::GetFlockManager() const
+{
+	return FlockManager;
 }

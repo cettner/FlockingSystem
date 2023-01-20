@@ -18,8 +18,18 @@ class FLOCKINGSYSTEM_API UFlockNavManager : public UObject
 
 	friend UFlock;
 
+public:
+	virtual void RegisterFlockAgent(IFlockAgentInterface* InAgent);
+	virtual void UnRegisterFlockAgent(IFlockAgentInterface* InAgent);
+
+	UFlock* CreateFlock(TSet<IFlockAgentInterface*> InAgents, IFlockAgentGoalInterface * InFlockGoal = nullptr);
+
 protected:
-	inline const TArray<IFlockAgentInterface*>& GetAllActiveAgents() const
+	TSet<UObject*> GetObstacleAgents(const UFlock* InFlock) const;
+
+
+protected:
+	inline const TSet<UObject*>& GetAllActiveAgents() const
 	{
 		return AllAgents;
 	}
@@ -29,5 +39,5 @@ protected:
 	TArray<UFlock*> AllFlocks;
 
 	UPROPERTY()
-	TArray<IFlockAgentInterface*> AllAgents;
+	TSet<UObject*> AllAgents;
 };
