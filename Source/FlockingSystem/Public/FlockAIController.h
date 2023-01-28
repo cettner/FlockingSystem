@@ -16,5 +16,15 @@ class FLOCKINGSYSTEM_API AFlockAIController : public AAIController
 	
 public:
 	AFlockAIController();
+	virtual void OnPossess(APawn* InPawn) override;
+
+	virtual void SetGoalActor(AActor* InGoal);
+
+protected:
+	UPROPERTY(transient)
+	class UBlackboardComponent* BlackboardComp;
+
+	UPROPERTY(transient)
+	class UBehaviorTreeComponent* BehaviorComp;
 
 };

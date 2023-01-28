@@ -3,24 +3,59 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/ObjectMacros.h"
-#include "InputCoreTypes.h"
-#include "Templates/SubclassOf.h"
-#include "NavFilters/NavigationQueryFilter.h"
-#include "AITypes.h"
 #include "BehaviorTree/Tasks/BTTask_BlackboardBase.h"
+#include "AITask_FlockMoveTo.h"
 #include "BTTask_FlockMoveTo.generated.h"
 
-/**
- * 
- */
+
+
+struct FBTFlockMoveToTaskMemory
+{
+	/** Move request ID */
+	FAIRequestID MoveRequestID;
+
+	FDelegateHandle BBObserverDelegateHandle;
+	FVector PreviousGoalLocation;
+
+	TWeakObjectPtr<UAITask_FlockMoveTo> Task;
+
+	uint8 bObserverCanFinishTask : 1;
+};
+
 UCLASS()
 class FLOCKINGSYSTEM_API UBTTask_FlockMoveTo : public UBTTask_BlackboardBase
 {
 	GENERATED_BODY()
 	
+public:
+	UBTTask_FlockMoveTo();
+
+protected:
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
+	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
+	virtual uint16 GetInstanceMemorySize() const override;
+	virtual void PostLoad() override;
+
+	virtual void OnGameplayTaskDeactivated(UGameplayTask& Task) override;
+	virtual void OnMessage(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, FName Message, int32 RequestID, bool bSuccess) override;
+	EBlackboardNotificationResult OnBlackboardValueChange(const UBlackboardComponent& Blackboard, FBlackboard::FKey ChangedKeyID);
+
+	virtual void DescribeRuntimeValues(const UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTDescriptionVerbosity::Type Verbosity, TArray<FString>& Values) const override;
+	virtual FString GetStaticDescription() const override;
+
+protected:
+
+	virtual EBTNodeResult::Type PerformMoveTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
+
+	/** prepares move task for activation */
+	virtual UAITask_FlockMoveTo* PrepareMoveTask(UBehaviorTreeComponent& OwnerComp, UAITask_FlockMoveTo* ExistingTask, FAIMoveRequest& MoveRequest);
+
+
+
+protected:
 	/** fixed distance added to threshold between AI and goal location in destination reach test */
-	UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
+	//UPROPERTY(config, Category = Node, EditAnywhere, meta = (ClampMin = "0.0", UIMin = "0.0"))
 	float AcceptableRadius;
 
 	/** "None" will result in default filter being used */
@@ -60,24 +95,14 @@ class FLOCKINGSYSTEM_API UBTTask_FlockMoveTo : public UBTTask_BlackboardBase
 	UPROPERTY(Category = Node, EditAnywhere)
 	uint32 bReachTestIncludesGoalRadius : 1;
 
+	/** DEPRECATED, please use combination of bReachTestIncludes*Radius instead */
+	UPROPERTY(Category = Node, VisibleInstanceOnly)
+	uint32 bStopOnOverlap : 1;
+
 	UPROPERTY()
 	uint32 bStopOnOverlapNeedsUpdate : 1;
 
 	/** if set, move will use pathfinding. Not exposed on purpose, please use BTTask_MoveDirectlyToward */
 	uint32 bUsePathfinding : 1;
 
-	/*
-	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	virtual EBTNodeResult::Type AbortTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
-	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
-	virtual uint16 GetInstanceMemorySize() const override;
-	virtual void PostLoad() override;
-
-	virtual void OnGameplayTaskDeactivated(UGameplayTask& Task) override;
-	virtual void OnMessage(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, FName Message, int32 RequestID, bool bSuccess) override;
-	EBlackboardNotificationResult OnBlackboardValueChange(const UBlackboardComponent& Blackboard, FBlackboard::FKey ChangedKeyID);
-
-	virtual void DescribeRuntimeValues(const UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTDescriptionVerbosity::Type Verbosity, TArray<FString>& Values) const override;
-	virtual FString GetStaticDescription() const override;
-	*/
 };

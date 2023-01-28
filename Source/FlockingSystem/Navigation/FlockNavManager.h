@@ -35,7 +35,7 @@ protected:
 	}
 
 protected:
-	UPROPERTY()
+	UPROPERTY(transient)
 	TArray<UFlock*> AllFlocks;
 
 	UPROPERTY()

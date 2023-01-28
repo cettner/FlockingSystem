@@ -14,7 +14,7 @@ void IFlockAgentInterface::LeaveFlock()
 {
 	UFlock* currentflock = GetFlock();
 	
-	if (currentflock != nullptr)
+	if (IsValid(currentflock))
 	{
 		currentflock->RemoveAgent(this);
 	}

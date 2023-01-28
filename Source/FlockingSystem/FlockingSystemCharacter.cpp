@@ -2,6 +2,7 @@
 
 #include "FlockingSystemCharacter.h"
 #include "../FlockingSystemGameMode.h"
+#include "../Public/FlockAIController.h"
 
 #include "UObject/ConstructorHelpers.h"
 #include "Camera/CameraComponent.h"
@@ -47,7 +48,7 @@ AFlockingSystemCharacter::AFlockingSystemCharacter()
 	PrimaryActorTick.bStartWithTickEnabled = false;
 
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;
-
+	AIControllerClass = AFlockAIController::StaticClass();
 }
 
 void AFlockingSystemCharacter::PostInitializeComponents()
@@ -63,5 +64,27 @@ void AFlockingSystemCharacter::PostInitializeComponents()
 			gm->GetFlockManager()->RegisterFlockAgent(this);
 		}
 
+	}
+}
+
+void AFlockingSystemCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+	AFlockAIController* aic = GetController<AFlockAIController>();
+
+	if (aic)
+	{
+		aic->SetGoalActor(PreSetFlockGoal);
+	}
+}
+
+void AFlockingSystemCharacter::JoinFlock(UFlock* InFlock)
+{
+	IFlockAgentInterface::JoinFlock(InFlock);
+	AFlockAIController* aic = GetController<AFlockAIController>();
+
+	if (aic)
+	{
+		aic->SetGoalActor(Cast<AActor>(InFlock->GetFlockGoal()));
 	}
 }
