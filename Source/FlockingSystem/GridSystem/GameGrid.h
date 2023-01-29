@@ -38,7 +38,7 @@ protected:
 
 	virtual int32 GetNumTiles();
 
-	virtual bool DetermineTileLocation(int32 InTileID, FVector& OutTileCenter);
+	virtual bool DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter);
 
 protected:
 

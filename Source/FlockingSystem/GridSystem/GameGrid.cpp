@@ -32,11 +32,11 @@ int32 AGameGrid::GetMaxRows() const
     int32 retval = 0;
     if (TileShape == EGridTileType::SQUARE)
     {
-        retval = FMath::CeilToInt(GridLength / TileRadius);
+        retval = FMath::FloorToInt(GridLength / TileRadius);
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
-        retval = FMath::CeilToInt((GridLength / (TileRadius * FMath::Sqrt(3.0f))) * 2.0f);
+        retval = FMath::FloorToInt((GridLength / (TileRadius * FMath::Sqrt(3.0f))) * 2.0f);
     }
 
     return retval;
@@ -47,11 +47,11 @@ int32 AGameGrid::GetMaxCols() const
     int32 retval = 0;
     if (TileShape == EGridTileType::SQUARE)
     {
-        retval = FMath::CeilToInt(GridWidth / TileRadius);
+        retval = FMath::FloorToInt(GridWidth / TileRadius);
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
-        retval = FMath::CeilToInt(GridWidth / (TileRadius * 1.5f));
+        retval = FMath::FloorToInt(GridWidth / (TileRadius * 1.5f));
     }
 
     return retval;
@@ -106,20 +106,26 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
     GridData.Empty();
 
     // Create new grid data
-    const int32 numtiles = GetMaxTiles();
-    for (int32 i = 0; i < numtiles; i++)
+    const int32 rowcount = GetMaxRows();
+    const int32 colcount = GetMaxCols();
+
+    for (int32 row = 0; row < rowcount; row++)
     {
-        FVector tilecenterlocation = FVector();
-
-        if (DetermineTileLocation(i, tilecenterlocation))
+        for (int col = 0; col < colcount; col++)
         {
-            UGridTile* newtile = NewObject<UGridTile>(this, TileClass);
-            newtile->SetupTile(i, tilecenterlocation);
-            
-            const TSet<FLine> boundarylines = newtile->GetTileBoundaryLines();
-            OutGridLines.Append(boundarylines);
+            FVector tilecenterlocation = FVector();
 
-            GridData.Emplace(newtile);
+            if (DetermineTileLocation(row, col, tilecenterlocation))
+            {
+                UGridTile* newtile = NewObject<UGridTile>(this, TileClass);
+                const int32 tileid = (row * colcount) + col;
+                newtile->SetupTile(tileid, tilecenterlocation);
+
+                const TSet<FLine> boundarylines = newtile->GetTileBoundaryLines();
+                OutGridLines.Append(boundarylines);
+
+                GridData.Emplace(newtile);
+            }
         }
     }
 
@@ -213,24 +219,17 @@ int32 AGameGrid::GetNumTiles()
     return GridData.Num();
 }
 
-bool AGameGrid::DetermineTileLocation(int32 InTileID, FVector& OutTileCenter)
+bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter)
 {
-    bool retval = true;
-
     const FVector actorlocation = GetActorLocation();
-
-    // Calculate the number of rows and columns in the grid
-    const int32 numRows = FMath::CeilToInt(GridLength / TileRadius);
-    const int32 numCols = FMath::CeilToInt(GridWidth / TileRadius);
-
-    // Calculate the x and y coordinates of the tile
-    const int32 x = InTileID % numCols;
-    const int32 y = InTileID / numCols;
 
     // Determine the shape of the tile
     if (TileShape == EGridTileType::SQUARE)
     {
-        OutTileCenter = actorlocation + FVector(x * TileRadius, y * TileRadius, 0);
+        float radius = TileRadius / FMath::Sqrt(2.0f);
+        OutTileCenter.X = actorlocation.X + (InRow * radius) + radius;
+        OutTileCenter.Y = actorlocation.Y + (InCol * radius) + radius;
+        OutTileCenter.Z = actorlocation.Z;
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
@@ -238,16 +237,9 @@ bool AGameGrid::DetermineTileLocation(int32 InTileID, FVector& OutTileCenter)
         const float xSpacing = (3.0f / 2.0f) * TileRadius;
         const float ySpacing = TileRadius * FMath::Sqrt(3.0f);
 
-        OutTileCenter = actorlocation + FVector(x * xSpacing, y * ySpacing, 0);
+      //  OutTileCenter = actorlocation + FVector(x * xSpacing, y * ySpacing, 0);
     }
-
-    // Check if the tile is within the bounds of the grid
-    if (OutTileCenter.X < 0 || OutTileCenter.X > GridWidth || OutTileCenter.Y < 0 || OutTileCenter.Y > GridLength)
-    {
-        retval = false;
-    }
-
-    return retval;
+    return IsValidGridLocation(OutTileCenter);
 }
 
 void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris)

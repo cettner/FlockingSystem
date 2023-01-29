@@ -25,10 +25,16 @@ FVector UGridTile::GetTileCenter() const
 	return TileCenter;
 }
 
+TArray<UGridTile*> UGridTile::GetNeighbors() const
+{
+	return Neighbors;
+}
+
 void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 {
 	TileID = InID;
 	TileCenter = InTileCenter;
+	DrawDebugString(GetWorld(),TileCenter, FString::FromInt(InID), GetGameGrid());
 }
 
 void UGridTile::AddNeighbor(UGridTile* InNeighbor)
@@ -48,10 +54,13 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 
 		if (tileshape == EGridTileType::SQUARE)
 		{
-			FVector topleft = tilecenter + FVector(-tileradius, tileradius, 0.0f);
-			FVector topright = tilecenter + FVector(tileradius, tileradius , 0.0f);
-			FVector bottomleft = tilecenter + FVector(-tileradius, -tileradius, 0.0f);
-			FVector bottomright = tilecenter + FVector(tileradius, -tileradius , 0.0f);
+			float offset = tileradius / FMath::Sqrt(2.0f);
+			float gridheight = tilecenter.Z;
+
+			FVector topleft = tilecenter + FVector(-offset, offset, gridheight);
+			FVector topright = tilecenter + FVector(offset, offset, gridheight);
+			FVector bottomleft = tilecenter + FVector(-offset, -offset, gridheight);
+			FVector bottomright = tilecenter + FVector(offset, -offset, gridheight);
 
 			retval.Add(FLine(topleft, topright));
 			retval.Add(FLine(topright, bottomright));
@@ -74,6 +83,19 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 			retval.Add(FLine(bottomright, topright));
 			retval.Add(FLine(topright, top));
 		}
+	}
+
+	return retval;
+}
+
+UWorld* UGridTile::GetWorld() const
+{
+	UWorld* retval = nullptr;
+	AActor* actor = Cast<AActor>(GetOuter());
+
+	if (IsValid(actor))
+	{
+		retval = actor->GetWorld();
 	}
 
 	return retval;

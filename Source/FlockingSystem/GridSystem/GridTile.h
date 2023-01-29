@@ -65,11 +65,13 @@ public:
     T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
     bool IsTileValid() const;
     FORCEINLINE FVector GetTileCenter() const;
+    TArray<UGridTile*> GetNeighbors() const;
 
 protected: 
     void SetupTile(const int32 InID, const FVector InTileCenter);
     void AddNeighbor(UGridTile* InNeighbor);
     TSet<FLine> GetTileBoundaryLines() const;
+    UWorld* GetWorld() const;
 
 protected:
     int32 TileID = INVALID_TILE_ID;
