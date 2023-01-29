@@ -34,7 +34,6 @@ void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 {
 	TileID = InID;
 	TileCenter = InTileCenter;
-	DrawDebugString(GetWorld(),TileCenter, FString::FromInt(InID), GetGameGrid());
 }
 
 void UGridTile::AddNeighbor(UGridTile* InNeighbor)
@@ -49,14 +48,13 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 	{
 		const AGameGrid* grid = GetGameGrid();
 		const EGridTileType tileshape = grid->GetTileShape();
-		const float tileradius = grid->GetTileRadius();
+		const float edgelength = grid->GetTileEdgeLength();
 		const FVector tilecenter = GetTileCenter();
 
 		if (tileshape == EGridTileType::SQUARE)
 		{
-			float offset = tileradius / FMath::Sqrt(2.0f);
 			float gridheight = tilecenter.Z;
-
+			float offset = edgelength / 2.0f;
 			FVector topleft = tilecenter + FVector(-offset, offset, gridheight);
 			FVector topright = tilecenter + FVector(offset, offset, gridheight);
 			FVector bottomleft = tilecenter + FVector(-offset, -offset, gridheight);
@@ -69,6 +67,7 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 		}
 		else if (EGridTileType::HEXAGON)
 		{
+			/*
 			FVector top = tilecenter + FVector(0, tileradius, 0);
 			FVector topleft = tilecenter + FVector(-tileradius * 0.5f, tileradius * 0.5f, 0);
 			FVector topright = tilecenter + FVector(tileradius * 0.5f, tileradius * 0.5f, 0);
@@ -82,6 +81,7 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 			retval.Add(FLine(bottom, bottomright));
 			retval.Add(FLine(bottomright, topright));
 			retval.Add(FLine(topright, top));
+			*/
 		}
 	}
 
@@ -99,6 +99,11 @@ UWorld* UGridTile::GetWorld() const
 	}
 
 	return retval;
+}
+
+void UGridTile::DrawDebugData()
+{
+	DrawDebugString(GetWorld(), TileCenter, FString::FromInt(TileID), GetGameGrid(), FColor::Red);
 }
 
 uint32 GetTypeHash(const FLine& Thing)

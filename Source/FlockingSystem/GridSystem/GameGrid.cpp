@@ -32,11 +32,11 @@ int32 AGameGrid::GetMaxRows() const
     int32 retval = 0;
     if (TileShape == EGridTileType::SQUARE)
     {
-        retval = FMath::FloorToInt(GridLength / TileRadius);
+        retval = FMath::FloorToInt(GridLength / TileEdgeLength);
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
-        retval = FMath::FloorToInt((GridLength / (TileRadius * FMath::Sqrt(3.0f))) * 2.0f);
+        retval = FMath::FloorToInt((GridLength / (TileEdgeLength * FMath::Sqrt(3.0f))) * 2.0f);
     }
 
     return retval;
@@ -47,11 +47,11 @@ int32 AGameGrid::GetMaxCols() const
     int32 retval = 0;
     if (TileShape == EGridTileType::SQUARE)
     {
-        retval = FMath::FloorToInt(GridWidth / TileRadius);
+        retval = FMath::FloorToInt(GridWidth / TileEdgeLength);
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
-        retval = FMath::FloorToInt(GridWidth / (TileRadius * 1.5f));
+        retval = FMath::FloorToInt(GridWidth / (TileEdgeLength * 1.5f));
     }
 
     return retval;
@@ -64,14 +64,26 @@ EGridTileType AGameGrid::GetTileShape() const
 
 float AGameGrid::GetTileRadius() const
 {
-    return TileRadius;
+    //todo update for hex and triangles
+    return TileEdgeLength / FMath::Sqrt(2.0f);
+}
+
+float AGameGrid::GetTileEdgeLength() const
+{
+    return TileEdgeLength;
 }
 
 bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
 {
     // Check if the location is within the grid's bounding box
-    return InLocation.X >= GetActorLocation().X && InLocation.X <= GetActorLocation().X + GridWidth
-        && InLocation.Y >= GetActorLocation().Y && InLocation.Y <= GetActorLocation().Y + GridLength;
+
+    bool check1 = InLocation.X >= GetActorLocation().X;
+    bool check2 = InLocation.X <= GetActorLocation().X + GridWidth;
+    bool check3 = InLocation.Y >= GetActorLocation().Y;
+    bool check4 = InLocation.Y <= GetActorLocation().Y + GridLength;
+
+    bool retval = check1 && check2 && check3 && check4;
+    return retval;
 }
 
 void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)
@@ -125,6 +137,10 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
                 OutGridLines.Append(boundarylines);
 
                 GridData.Emplace(newtile);
+            }
+            else
+            {
+                int debug = 9;
             }
         }
     }
@@ -214,6 +230,20 @@ void AGameGrid::PostInitializeComponents()
     }
 }
 
+void AGameGrid::BeginPlay()
+{
+    Super::BeginPlay();
+    DrawDebugData();
+}
+
+void AGameGrid::DrawDebugData()
+{
+    for (int i = 0; i < GridData.Num(); i++)
+    {
+        GridData[i]->DrawDebugData();
+    }
+}
+
 int32 AGameGrid::GetNumTiles()
 {
     return GridData.Num();
@@ -226,20 +256,22 @@ bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVec
     // Determine the shape of the tile
     if (TileShape == EGridTileType::SQUARE)
     {
-        float radius = TileRadius / FMath::Sqrt(2.0f);
-        OutTileCenter.X = actorlocation.X + (InRow * radius) + radius;
-        OutTileCenter.Y = actorlocation.Y + (InCol * radius) + radius;
+        const float halfedgelength = (0.5f * TileEdgeLength);
+        OutTileCenter.X = actorlocation.X + (InRow * TileEdgeLength) + halfedgelength;
+        OutTileCenter.Y = actorlocation.Y + (InCol * TileEdgeLength) + halfedgelength;
         OutTileCenter.Z = actorlocation.Z;
     }
     else if (TileShape == EGridTileType::HEXAGON)
     {
         // Calculate the distance between the center of each hexagon in the x and y direction
-        const float xSpacing = (3.0f / 2.0f) * TileRadius;
-        const float ySpacing = TileRadius * FMath::Sqrt(3.0f);
+        const float xSpacing = (3.0f / 2.0f) * TileEdgeLength;
+        const float ySpacing = TileEdgeLength * FMath::Sqrt(3.0f);
 
       //  OutTileCenter = actorlocation + FVector(x * xSpacing, y * ySpacing, 0);
     }
-    return IsValidGridLocation(OutTileCenter);
+    bool retval = IsValidGridLocation(OutTileCenter);
+
+    return retval;
 }
 
 void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris)

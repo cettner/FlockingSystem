@@ -74,6 +74,9 @@ protected:
     UWorld* GetWorld() const;
 
 protected:
+    virtual void DrawDebugData();
+
+protected:
     int32 TileID = INVALID_TILE_ID;
 
     FVector TileCenter = FVector();

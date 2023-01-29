@@ -27,6 +27,7 @@ public:
 	virtual int32 GetMaxCols() const;
 	virtual EGridTileType GetTileShape() const;
 	virtual float GetTileRadius() const;
+	virtual float GetTileEdgeLength() const;
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
 
 protected:
@@ -47,6 +48,11 @@ protected:
 protected:
 	virtual void PostInitializeComponents() override;
 
+	virtual void BeginPlay() override;
+
+protected:
+	virtual void DrawDebugData();
+
 protected:
 	/*Width of Drawn Line*/
 	UPROPERTY(EditAnywhere, Category = "Setup")
@@ -57,7 +63,7 @@ protected:
 
 	/*Tile Radius*/
 	UPROPERTY(EditAnywhere, Category = "Setup")
-	float TileRadius = 200.0f;
+	float TileEdgeLength = 200.0f;
 
 	UPROPERTY(EditAnywhere, Category = "Setup")
 	float GridWidth = 1000.0f;
