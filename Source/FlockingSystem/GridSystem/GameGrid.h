@@ -99,4 +99,15 @@ protected:
 
 	UProceduralMeshComponent* SelectionProceduralMesh;
 
+#ifdef WITH_EDITOR
+
+protected:
+	virtual void RebuildGridData(bool bRedrawMesh = true);
+
+protected:
+	virtual void OnConstruction(const FTransform& Transform) override;
+	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+	bool bRebuildGridData = true;
+#endif
+
 };

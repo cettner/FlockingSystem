@@ -78,9 +78,9 @@ bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
     // Check if the location is within the grid's bounding box
 
     bool check1 = InLocation.X >= GetActorLocation().X;
-    bool check2 = InLocation.X <= GetActorLocation().X + GridWidth;
+    bool check2 = InLocation.X <= GetActorLocation().X + GridLength;
     bool check3 = InLocation.Y >= GetActorLocation().Y;
-    bool check4 = InLocation.Y <= GetActorLocation().Y + GridLength;
+    bool check4 = InLocation.Y <= GetActorLocation().Y + GridWidth;
 
     bool retval = check1 && check2 && check3 && check4;
     return retval;
@@ -88,6 +88,7 @@ bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
 
 void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)
 {
+    LinesProceduralMesh->ClearAllMeshSections();
     UMaterialInstanceDynamic* linematerial = UMaterialInstanceDynamic::Create(GridMaterial, this);
 
     linematerial->SetVectorParameterValue(ColorParameterName, LineColor);
@@ -123,7 +124,7 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
 
     for (int32 row = 0; row < rowcount; row++)
     {
-        for (int col = 0; col < colcount; col++)
+        for (int32 col = 0; col < colcount; col++)
         {
             FVector tilecenterlocation = FVector();
 
@@ -137,10 +138,6 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
                 OutGridLines.Append(boundarylines);
 
                 GridData.Emplace(newtile);
-            }
-            else
-            {
-                int debug = 9;
             }
         }
     }
@@ -163,14 +160,15 @@ void AGameGrid::AddTileNeighbors()
 
         if (TileShape == EGridTileType::SQUARE)
         {
+            // Top Neighbor
+            if (row < (numrows - 1))
+            {
+                currenttile->AddNeighbor(GridData[i + numcols]);
+            }
+            // Check bottom neighbor
             if (row > 0)
             {
                 currenttile->AddNeighbor(GridData[i - numcols]);
-            }
-            // Check bottom neighbor
-            if (row < numrows - 1)
-            {
-                currenttile->AddNeighbor(GridData[i + numcols]);
             }
             // Check left neighbor
             if (col > 0)
@@ -241,6 +239,68 @@ void AGameGrid::DrawDebugData()
     for (int i = 0; i < GridData.Num(); i++)
     {
         GridData[i]->DrawDebugData();
+    }
+}
+
+void AGameGrid::RebuildGridData(bool bRedrawMesh)
+{
+    TSet<FLine> lineset = TSet<FLine>();
+    BuildGridData(lineset);
+
+    if (bRedrawMesh && IsValid(LinesProceduralMesh))
+    {
+        DrawTiles(lineset);
+    }
+}
+
+void AGameGrid::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+
+    if (bRebuildGridData == true)
+    {
+        UWorld* World = GetWorld();
+
+        if (World != nullptr)
+        {
+            EWorldType::Type type = World->WorldType;
+            if (type >= EWorldType::Editor)
+            {
+                TSet<FLine> lineset = TSet<FLine>();
+                if (BuildGridData(lineset) && IsValid(LinesProceduralMesh))
+                {
+                    DrawTiles(lineset);
+                    bRebuildGridData = false;
+                }
+            }
+        }
+    }
+
+}
+
+void AGameGrid::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+    Super::PostEditChangeProperty(PropertyChangedEvent);
+
+    const FName PropName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : FName();
+
+    if (PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, TileEdgeLength)
+        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridLength)
+        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridWidth))
+    {
+        if (TileEdgeLength > GridLength || TileEdgeLength > GridWidth)
+        {
+            if (GridLength <= GridWidth)
+            {
+                TileEdgeLength = GridLength;
+            }
+            else
+            {
+                TileEdgeLength = GridWidth;
+            }
+        }
+
+        RebuildGridData();
     }
 }
 

@@ -85,4 +85,5 @@ protected:
     TArray<UGridTile*> Neighbors = TArray<UGridTile*>();
 
     TArray<FVector> TileBounds = TArray<FVector>();
+
 };
