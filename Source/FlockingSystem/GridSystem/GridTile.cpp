@@ -30,20 +30,16 @@ TArray<UGridTile*> UGridTile::GetNeighbors() const
 	return Neighbors;
 }
 
+FVector UGridTile::GetTileNormal() const
+{
+	return TileNormal;
+}
+
 void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 {
 	TileID = InID;
 	TileCenter = InTileCenter;
-}
 
-void UGridTile::AddNeighbor(UGridTile* InNeighbor)
-{
-	Neighbors.AddUnique(InNeighbor);
-}
-
-TSet<FLine> UGridTile::GetTileBoundaryLines() const
-{
-	TSet<FLine> retval = TSet<FLine>();
 	if (IsTileValid())
 	{
 		const AGameGrid* grid = GetGameGrid();
@@ -53,39 +49,35 @@ TSet<FLine> UGridTile::GetTileBoundaryLines() const
 
 		if (tileshape == EGridTileType::SQUARE)
 		{
-			float gridheight = tilecenter.Z;
-			float offset = edgelength / 2.0f;
-			FVector topleft = tilecenter + FVector(-offset, offset, gridheight);
-			FVector topright = tilecenter + FVector(offset, offset, gridheight);
-			FVector bottomleft = tilecenter + FVector(-offset, -offset, gridheight);
-			FVector bottomright = tilecenter + FVector(offset, -offset, gridheight);
+			const float gridheight = tilecenter.Z;
+			const float offset = edgelength * .5f;
+			const FVector p1 = tilecenter + FVector(-offset, offset, gridheight);
+			const FVector p2 = tilecenter + FVector(offset, offset, gridheight);
+			const FVector p3 = tilecenter + FVector(-offset, -offset, gridheight);
+			const FVector p4 = tilecenter + FVector(offset, -offset, gridheight);
 
-			retval.Add(FLine(topleft, topright));
-			retval.Add(FLine(topright, bottomright));
-			retval.Add(FLine(bottomright, bottomleft));
-			retval.Add(FLine(bottomleft, topleft));
-		}
-		else if (EGridTileType::HEXAGON)
-		{
-			/*
-			FVector top = tilecenter + FVector(0, tileradius, 0);
-			FVector topleft = tilecenter + FVector(-tileradius * 0.5f, tileradius * 0.5f, 0);
-			FVector topright = tilecenter + FVector(tileradius * 0.5f, tileradius * 0.5f, 0);
-			FVector bottomleft = tilecenter + FVector(-tileradius * 0.5f, -tileradius * 0.5f, 0);
-			FVector bottomright = tilecenter + FVector(tileradius * 0.5f, -tileradius * 0.5f, 0);
-			FVector bottom = tilecenter + FVector(0, -tileradius, 0);
+			TileBounds.Add(FLine(p1, p2));
+			TileBounds.Add(FLine(p2, p4));
+			TileBounds.Add(FLine(p4, p3));
+			TileBounds.Add(FLine(p3, p1));
 
-			retval.Add(FLine(top, topleft));
-			retval.Add(FLine(topleft, bottomleft));
-			retval.Add(FLine(bottomleft, bottom));
-			retval.Add(FLine(bottom, bottomright));
-			retval.Add(FLine(bottomright, topright));
-			retval.Add(FLine(topright, top));
-			*/
+			/*Calculate vectors to compute the normal*/
+			const FVector v1 = p2 - tilecenter;
+			const FVector v2 = p3 - tilecenter;
+			TileNormal = v1.Cross(v2);
+			TileNormal.Normalize();
 		}
 	}
+}
 
-	return retval;
+void UGridTile::AddNeighbor(UGridTile* InNeighbor)
+{
+	Neighbors.AddUnique(InNeighbor);
+}
+
+TSet<FLine> UGridTile::GetTileBoundaryLines() const
+{
+	return TileBounds;
 }
 
 UWorld* UGridTile::GetWorld() const
@@ -108,6 +100,6 @@ void UGridTile::DrawDebugData()
 
 uint32 GetTypeHash(const FLine& Thing)
 {
-	uint32 Hash = FCrc::MemCrc32(&Thing, sizeof(FLine));
+	const uint32 Hash = FCrc::MemCrc32(&Thing, sizeof(FLine));
 	return Hash;
 }

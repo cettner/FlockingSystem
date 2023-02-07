@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "GridTile.h"
+#include "GridLayer.h"
 #include "ProceduralMeshComponent.h"
 
 #include "GameGrid.generated.h"
@@ -25,10 +26,14 @@ public:
 	virtual int32 GetMaxTiles() const;
 	virtual int32 GetMaxRows() const;
 	virtual int32 GetMaxCols() const;
+	const TArray<UGridTile*>& GetTiles() const { return GridData; }
 	virtual EGridTileType GetTileShape() const;
 	virtual float GetTileRadius() const;
 	virtual float GetTileEdgeLength() const;
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
+
+public:
+	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass);
 
 protected:
 	virtual void DrawTiles(const TSet<FLine>& InGridLines);
@@ -36,6 +41,8 @@ protected:
 	virtual bool BuildGridData(TSet<FLine>& OutGridLines);
 
 	virtual void AddTileNeighbors();
+
+	virtual void InitializeLayers();
 
 	virtual int32 GetNumTiles();
 
@@ -89,15 +96,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float LineOpacity = 1.0f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	TArray<TSubclassOf<UGridLayer>> StartupLayers = TArray<TSubclassOf<UGridLayer>>();
+
 protected:
 	UPROPERTY(Transient)
 	TArray<UGridTile*> GridData = TArray<UGridTile*>();
 
+	UPROPERTY(Transient)
+	TArray<UGridLayer*> GridLayers = TArray<UGridLayer*>();
+
 	bool bIsGridDataBuilt = false;
 
-	UProceduralMeshComponent* LinesProceduralMesh;
+	UProceduralMeshComponent* LinesProceduralMesh = nullptr;
 
-	UProceduralMeshComponent* SelectionProceduralMesh;
+	UProceduralMeshComponent* SelectionProceduralMesh = nullptr;
 
 #ifdef WITH_EDITOR
 

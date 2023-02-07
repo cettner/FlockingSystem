@@ -65,6 +65,7 @@ public:
     T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
     bool IsTileValid() const;
     FORCEINLINE FVector GetTileCenter() const;
+    FORCEINLINE FVector GetTileNormal() const;
     TArray<UGridTile*> GetNeighbors() const;
 
 protected: 
@@ -81,9 +82,11 @@ protected:
 
     FVector TileCenter = FVector();
 
+    FVector TileNormal = FVector();
+
     UPROPERTY();
     TArray<UGridTile*> Neighbors = TArray<UGridTile*>();
 
-    TArray<FVector> TileBounds = TArray<FVector>();
+    TSet<FLine> TileBounds = TSet<FLine>();
 
 };

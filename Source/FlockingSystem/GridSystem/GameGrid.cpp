@@ -86,6 +86,16 @@ bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
     return retval;
 }
 
+UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
+{
+    UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
+    const int32 layerid = GridLayers.Emplace();
+    retval->SetLayerID(layerid);
+    retval->LayerInitialize(this);
+
+    return retval;
+}
+
 void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)
 {
     LinesProceduralMesh->ClearAllMeshSections();
@@ -143,6 +153,7 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
     }
 
     AddTileNeighbors();
+    InitializeLayers();
 
 	return retval;
 }
@@ -214,6 +225,14 @@ void AGameGrid::AddTileNeighbors()
                 currenttile->AddNeighbor(GridData[i + 1]);
             }
         }
+    }
+}
+
+void AGameGrid::InitializeLayers()
+{
+    for (int i = 0; i < StartupLayers.Num(); i++)
+    {
+        AddGridLayer(StartupLayers[i]);
     }
 }
 
