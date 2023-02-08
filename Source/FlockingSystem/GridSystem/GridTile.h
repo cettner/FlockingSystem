@@ -67,6 +67,7 @@ public:
     FORCEINLINE FVector GetTileCenter() const;
     FORCEINLINE FVector GetTileNormal() const;
     TArray<UGridTile*> GetNeighbors() const;
+    void SetTileFillColor(const FLinearColor InColor);
 
 protected: 
     void SetupTile(const int32 InID, const FVector InTileCenter);
@@ -84,7 +85,9 @@ protected:
 
     FVector TileNormal = FVector();
 
-    UPROPERTY();
+    FLinearColor TileFillColor = FLinearColor::Transparent;
+
+    UPROPERTY(Transient)
     TArray<UGridTile*> Neighbors = TArray<UGridTile*>();
 
     TSet<FLine> TileBounds = TSet<FLine>();

@@ -93,7 +93,17 @@ UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
     retval->SetLayerID(layerid);
     retval->LayerInitialize(this);
 
+    if (retval->ShouldActivateAtStart())
+    {
+        SetActiveLayer(retval);
+    }
+
     return retval;
+}
+
+void AGameGrid::SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset)
+{
+    InLayer->OnLayerActivate(InTileSubset);
 }
 
 void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)

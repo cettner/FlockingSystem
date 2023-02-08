@@ -34,6 +34,7 @@ public:
 
 public:
 	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass);
+	virtual void SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset = TArray<UGridTile*>());
 
 protected:
 	virtual void DrawTiles(const TSet<FLine>& InGridLines);
@@ -49,7 +50,6 @@ protected:
 	virtual bool DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter);
 
 protected:
-
 	virtual void BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris);
 
 protected:
@@ -59,6 +59,7 @@ protected:
 
 protected:
 	virtual void DrawDebugData();
+
 
 protected:
 	/*Width of Drawn Line*/

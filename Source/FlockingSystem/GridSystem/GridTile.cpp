@@ -30,6 +30,11 @@ TArray<UGridTile*> UGridTile::GetNeighbors() const
 	return Neighbors;
 }
 
+void UGridTile::SetTileFillColor(const FLinearColor InColor)
+{
+
+}
+
 FVector UGridTile::GetTileNormal() const
 {
 	return TileNormal;
@@ -63,8 +68,8 @@ void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 
 			/*Calculate vectors to compute the normal*/
 			const FVector v1 = p2 - tilecenter;
-			const FVector v2 = p3 - tilecenter;
-			TileNormal = v1.Cross(v2);
+			const FVector v2 = p4 - tilecenter;
+			TileNormal = v2.Cross(v1);
 			TileNormal.Normalize();
 		}
 	}

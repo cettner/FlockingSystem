@@ -19,18 +19,33 @@ class FLOCKINGSYSTEM_API UGridLayer : public UObject
 	friend class AGameGrid;
 
 public:
-	int32 GetLayerID() const { return LayerID; };
+	int32 GetLayerID() const { return LayerID; }
+	bool ShouldActivateAtStart() const { return bActivatesOnStartup;  }
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid);
 	void SetLayerID(const int32 InID) { LayerID = InID;}
-	AGameGrid* GetGameGrid() const { return ParentGrid; };
+	AGameGrid* GetGameGrid() const { return ParentGrid; }
 	
 	template<class T>
 	T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
+
+	virtual void OnLayerActivate(TArray<UGridTile *> TileSubset = TArray<UGridTile*>());
+	virtual uint32 OnLayerDeactivate(TArray<UGridTile*> TileSubset = TArray<UGridTile*>());
+	virtual void PostActivateTile(UGridTile* InTile);
+	virtual void PostDeactivateTile(UGridTile* InTile);
+
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	bool bActivatesOnStartup = true;
+
+protected:
+	TMap<UGridTile*, bool> ActiveTiles = TMap<UGridTile*, bool>();
 
 protected:
 	AGameGrid* ParentGrid = nullptr;
 	
 	int32 LayerID = INVALID_LAYER_ID;
+
+
 };
