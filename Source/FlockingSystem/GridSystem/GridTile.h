@@ -68,6 +68,7 @@ public:
     FORCEINLINE FVector GetTileNormal() const;
     TArray<UGridTile*> GetNeighbors() const;
     void SetTileFillColor(const FLinearColor InColor);
+    void SetTileVisible(const bool InIsVisible);
 
 protected: 
     void SetupTile(const int32 InID, const FVector InTileCenter);

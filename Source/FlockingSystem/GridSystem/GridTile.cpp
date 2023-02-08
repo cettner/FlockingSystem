@@ -32,7 +32,12 @@ TArray<UGridTile*> UGridTile::GetNeighbors() const
 
 void UGridTile::SetTileFillColor(const FLinearColor InColor)
 {
+	GetGameGrid()->SetTileColor(GetTileID(), InColor);
+}
 
+void UGridTile::SetTileVisible(const bool InIsVisible)
+{
+	GetGameGrid()->SetTileVisible(GetTileID(), InIsVisible);
 }
 
 FVector UGridTile::GetTileNormal() const

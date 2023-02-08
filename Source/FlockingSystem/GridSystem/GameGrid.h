@@ -31,13 +31,17 @@ public:
 	virtual float GetTileRadius() const;
 	virtual float GetTileEdgeLength() const;
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
+	virtual void SetTileVisible(int32 TileID, bool bIsVisble) const;
+	virtual void SetTileColor(int32 TileID, FLinearColor InTileColor);
 
 public:
 	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass);
 	virtual void SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset = TArray<UGridTile*>());
 
 protected:
-	virtual void DrawTiles(const TSet<FLine>& InGridLines);
+	virtual void DrawGridLines(const TSet<FLine>& InGridLines);
+
+	virtual void DrawGridTiles();
 
 	virtual bool BuildGridData(TSet<FLine>& OutGridLines);
 
@@ -96,6 +100,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	float LineOpacity = 1.0f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	FLinearColor DefaultTileFillColor = FLinearColor::Red;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Setup")
+	float DefaultTileFillOpacity = 1.0f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	TArray<TSubclassOf<UGridLayer>> StartupLayers = TArray<TSubclassOf<UGridLayer>>();

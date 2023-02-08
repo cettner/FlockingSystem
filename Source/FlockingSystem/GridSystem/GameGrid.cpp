@@ -6,6 +6,7 @@
 AGameGrid::AGameGrid() : Super()
 {
     LinesProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Grid Line Drawing Component"));
+    SelectionProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Tile Drawing Component"));
 }
 
 int32 AGameGrid::GetMaxTiles() const
@@ -86,6 +87,24 @@ bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
     return retval;
 }
 
+void AGameGrid::SetTileVisible(int32 TileID, bool bIsVisble) const
+{
+    if (IsValid(SelectionProceduralMesh))
+    {
+        SelectionProceduralMesh->SetMeshSectionVisible(TileID, bIsVisble);
+    }
+}
+
+void AGameGrid::SetTileColor(int32 TileID, FLinearColor InTileColor)
+{
+    UMaterialInterface* minterface = SelectionProceduralMesh->GetMaterial(TileID);
+    UMaterialInstanceDynamic* TileMaterial = Cast<UMaterialInstanceDynamic>(SelectionProceduralMesh->GetMaterial(TileID));
+    if (IsValid(TileMaterial))
+    {
+        TileMaterial->SetVectorParameterValue(ColorParameterName, InTileColor);
+    }
+}
+
 UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
 {
     UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
@@ -106,7 +125,7 @@ void AGameGrid::SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSub
     InLayer->OnLayerActivate(InTileSubset);
 }
 
-void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)
+void AGameGrid::DrawGridLines(const TSet<FLine>& InGridLines)
 {
     LinesProceduralMesh->ClearAllMeshSections();
     UMaterialInstanceDynamic* linematerial = UMaterialInstanceDynamic::Create(GridMaterial, this);
@@ -129,6 +148,42 @@ void AGameGrid::DrawTiles(const TSet<FLine>& InGridLines)
         sectionid++;
     }
 
+}
+
+void AGameGrid::DrawGridTiles()
+{
+    for (int32 i = 0; i < GridData.Num(); i++)
+    {
+        TArray<FVector> selectedverts = TArray<FVector>();
+        TArray<int> selectedtris = TArray<int>();
+        UGridTile * currenttile = GridData[i];
+        
+        if (TileShape == EGridTileType::SQUARE)
+        {
+            const FVector tilecenter = currenttile->GetTileCenter();
+            const float halfwidth = TileEdgeLength * .5f;
+            const FVector gridfv = GetActorForwardVector();
+
+            FVector selectstart = tilecenter + (gridfv * halfwidth);
+            FVector selectend = tilecenter - (gridfv * halfwidth);
+
+            /*Draw a single fat "Line" with the width the size of the Tile*/
+            BuildLineRenderData(selectstart, selectend, TileEdgeLength, selectedverts, selectedtris);
+
+
+            if (SelectionProceduralMesh && GridMaterial)
+            {
+                const int32 tileid = currenttile->GetTileID();
+                UMaterialInstanceDynamic* selectionmaterial = UMaterialInstanceDynamic::Create(GridMaterial, this);
+                selectionmaterial->SetVectorParameterValue(ColorParameterName, DefaultTileFillColor);
+                selectionmaterial->SetScalarParameterValue(OpacityParameterName, DefaultTileFillOpacity);
+
+                SelectionProceduralMesh->CreateMeshSection(tileid, selectedverts, selectedtris, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+                SelectionProceduralMesh->SetMaterial(tileid, selectionmaterial);
+                SelectionProceduralMesh->SetMeshSectionVisible(tileid, false);
+            }
+        }
+    }
 }
 
 bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
@@ -163,7 +218,6 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
     }
 
     AddTileNeighbors();
-    InitializeLayers();
 
 	return retval;
 }
@@ -253,7 +307,9 @@ void AGameGrid::PostInitializeComponents()
     TSet<FLine> lineset = TSet<FLine>();
     if (BuildGridData(lineset)  && IsValid(LinesProceduralMesh))
     {
-        DrawTiles(lineset);
+        DrawGridLines(lineset);
+        DrawGridTiles();
+        InitializeLayers();
     }
 }
 
@@ -278,7 +334,7 @@ void AGameGrid::RebuildGridData(bool bRedrawMesh)
 
     if (bRedrawMesh && IsValid(LinesProceduralMesh))
     {
-        DrawTiles(lineset);
+        DrawGridLines(lineset);
     }
 }
 
@@ -298,7 +354,7 @@ void AGameGrid::OnConstruction(const FTransform& Transform)
                 TSet<FLine> lineset = TSet<FLine>();
                 if (BuildGridData(lineset) && IsValid(LinesProceduralMesh))
                 {
-                    DrawTiles(lineset);
+                    DrawGridLines(lineset);
                     bRebuildGridData = false;
                 }
             }
@@ -365,7 +421,7 @@ bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVec
 
 void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris)
 {
-	const float halfthickness = LineThickness / 2.0f;
+	const float halfthickness = LineThickness * 0.5f;
 
 	/*A Line Segment is made of two triangles forming a rectangle, get the hypotenuse, then cross with z to get the grid direction*/
 	const FVector trianglehypotenuse = (LineEnd - LineStart).GetSafeNormal();

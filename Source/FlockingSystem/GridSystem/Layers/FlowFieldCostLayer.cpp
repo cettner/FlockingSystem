@@ -12,8 +12,9 @@ bool UFlowFieldCostLayer::GetTileCost(UGridTile* InTile, uint8& OutCost)
 	if (costptr != nullptr)
 	{
 		OutCost = *costptr;
+		retval = true;
 	}
-	return false;
+	return retval;
 }
 
 void UFlowFieldCostLayer::LayerInitialize(AGameGrid* InGrid)
@@ -31,6 +32,8 @@ void UFlowFieldCostLayer::PostActivateTile(UGridTile* InTile)
 	if (GetTileCost(InTile, outcost) && outcost > 0U)
 	{
 		FLinearColor fillcolor = GetCostFillColor(outcost);
+		InTile->SetTileFillColor(fillcolor);
+		InTile->SetTileVisible(true);
 	}
 
 }
