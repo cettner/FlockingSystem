@@ -5,6 +5,15 @@
 #include "../GameGrid.h"
 
 
+UFlowFieldCostLayer::UFlowFieldCostLayer()
+{
+	TraceQueryParams.TraceTag = "DebugCostTag";
+	TraceQueryParams.bTraceComplex = false;
+	TraceQueryParams.bReturnFaceIndex = true;
+	TraceQueryParams.bReturnPhysicalMaterial = false;
+	TraceQueryParams.bFindInitialOverlaps = false;
+}
+
 bool UFlowFieldCostLayer::GetTileCost(UGridTile* InTile, uint8& OutCost)
 {
 	bool retval = false;
@@ -54,21 +63,16 @@ uint8 UFlowFieldCostLayer::CalculateTileCost(const UGridTile* InTile)
 
 	if (world != nullptr)
 	{
+		static const FQuat tracerotation = FRotator(0.0f, 0.0f, 0.0f).Quaternion();
+		static const FCollisionShape traceshape = FCollisionShape::MakeSphere(30.0f);
+
 		const FVector tilenormal = InTile->GetTileNormal();
 		const FVector tracelocation = InTile->GetTileCenter() + (tilenormal * BlockTraceHeightOffset);
-		const FCollisionShape traceshape = FCollisionShape::MakeSphere(30.0f);
-		FCollisionQueryParams queryparams = FCollisionQueryParams::DefaultQueryParam;
-		FName TraceTag("DebugCostTag");
-		world->DebugDrawTraceTag = TraceTag;
-		queryparams.TraceTag = TraceTag;
-		queryparams.bTraceComplex = false;
-		queryparams.bReturnFaceIndex = true;
-		queryparams.bReturnPhysicalMaterial = false;
-		queryparams.bFindInitialOverlaps = false;
-		const FQuat tracerotation =  FRotator(0.0f, 0.0f, 0.0f).Quaternion();
+
+		world->DebugDrawTraceTag = TraceQueryParams.TraceTag;
 
 		FHitResult outhit = FHitResult();
-		world->SweepSingleByChannel(outhit, tracelocation, tracelocation, tracerotation, BlockTraceChannel, traceshape, queryparams);
+		world->SweepSingleByChannel(outhit, tracelocation, tracelocation, tracerotation, BlockTraceChannel, traceshape, TraceQueryParams);
 
 		if (outhit.bBlockingHit)
 		{

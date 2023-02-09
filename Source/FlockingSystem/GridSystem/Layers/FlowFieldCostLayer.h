@@ -13,7 +13,9 @@ UCLASS()
 class FLOCKINGSYSTEM_API UFlowFieldCostLayer : public UGridLayer
 {
 	GENERATED_BODY()
-	
+
+protected:
+	UFlowFieldCostLayer();
 
 public:
 	virtual bool GetTileCost(UGridTile* InTile, uint8& OutCost);
@@ -37,6 +39,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
 	float BlockTraceRadius = 30.0f;
 
+	FCollisionQueryParams TraceQueryParams = FCollisionQueryParams::DefaultQueryParam;
+
 protected:
 	TMap<UGridTile *, uint8> CostMap = TMap<UGridTile *, uint8>();
+
+
 };
