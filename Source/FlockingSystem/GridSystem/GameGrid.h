@@ -33,6 +33,22 @@ public:
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
 	virtual void SetTileVisible(int32 TileID, bool bIsVisble) const;
 	virtual void SetTileColor(int32 TileID, FLinearColor InTileColor);
+	
+	template<typename T>
+	T* GetLayerOfClass() const
+	{
+		T* retval = nullptr;
+		for (int32 i = 0; i < GridLayers.Num(); i++)
+		{
+			if (T* layer = Cast<T>(GridLayers[i]))
+			{
+				retval = layer;
+				break;
+			}
+		}
+
+		return retval;
+	}
 
 public:
 	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass);

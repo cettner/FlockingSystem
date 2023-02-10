@@ -56,7 +56,7 @@ int32 AGameGrid::GetMaxCols() const
     }
 
     return retval;
-}
+}  
 
 EGridTileType AGameGrid::GetTileShape() const
 {
@@ -97,7 +97,6 @@ void AGameGrid::SetTileVisible(int32 TileID, bool bIsVisble) const
 
 void AGameGrid::SetTileColor(int32 TileID, FLinearColor InTileColor)
 {
-    UMaterialInterface* minterface = SelectionProceduralMesh->GetMaterial(TileID);
     UMaterialInstanceDynamic* TileMaterial = Cast<UMaterialInstanceDynamic>(SelectionProceduralMesh->GetMaterial(TileID));
     if (IsValid(TileMaterial))
     {
@@ -117,12 +116,19 @@ UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
         SetActiveLayer(retval);
     }
 
+
     return retval;
 }
 
 void AGameGrid::SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset)
 {
     InLayer->OnLayerActivate(InTileSubset);
+    
+    /*Call this here so that it doesnt need ot be included in the "super" call of OnLayerActivate*/
+    if (InLayer->IsLayerVisible())
+    {
+        InLayer->OnShowLayer();
+    }
 }
 
 void AGameGrid::DrawGridLines(const TSet<FLine>& InGridLines)

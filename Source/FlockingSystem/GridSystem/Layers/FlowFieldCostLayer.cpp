@@ -7,6 +7,8 @@
 
 UFlowFieldCostLayer::UFlowFieldCostLayer()
 {
+	bIsLayerVisible = true;
+
 	TraceQueryParams.TraceTag = "DebugCostTag";
 	TraceQueryParams.bTraceComplex = false;
 	TraceQueryParams.bReturnFaceIndex = true;
@@ -14,10 +16,10 @@ UFlowFieldCostLayer::UFlowFieldCostLayer()
 	TraceQueryParams.bFindInitialOverlaps = false;
 }
 
-bool UFlowFieldCostLayer::GetTileCost(UGridTile* InTile, uint8& OutCost)
+bool UFlowFieldCostLayer::GetTileCost(const UGridTile* InTile, uint8& OutCost) const
 {
 	bool retval = false;
-	uint8 * costptr = CostMap.Find(InTile);
+	const uint8 * costptr = CostMap.Find(InTile);
 	if (costptr != nullptr)
 	{
 		OutCost = *costptr;
@@ -29,13 +31,15 @@ bool UFlowFieldCostLayer::GetTileCost(UGridTile* InTile, uint8& OutCost)
 void UFlowFieldCostLayer::LayerInitialize(AGameGrid* InGrid)
 {
 	Super::LayerInitialize(InGrid);
-	const TArray<UGridTile*>& alltiles = InGrid->GetTiles();
-
-	CalculateTiles(alltiles);
-
 }
 
 void UFlowFieldCostLayer::PostActivateTile(UGridTile* InTile)
+{
+	const uint8 tilecost = CalculateTileCost(InTile);
+	CostMap.Emplace(InTile, tilecost);
+}
+
+void UFlowFieldCostLayer::ShowTile(UGridTile* InTile)
 {
 	uint8 outcost;
 	if (GetTileCost(InTile, outcost) && outcost > 0U)
@@ -44,8 +48,14 @@ void UFlowFieldCostLayer::PostActivateTile(UGridTile* InTile)
 		InTile->SetTileFillColor(fillcolor);
 		InTile->SetTileVisible(true);
 	}
-
 }
+
+void UFlowFieldCostLayer::HideTile(UGridTile* InTile)
+{
+	InTile->SetTileVisible(false);
+}
+
+
 
 void UFlowFieldCostLayer::CalculateTiles(const TArray<UGridTile*>& InTiles)
 {

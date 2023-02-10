@@ -18,11 +18,13 @@ protected:
 	UFlowFieldCostLayer();
 
 public:
-	virtual bool GetTileCost(UGridTile* InTile, uint8& OutCost);
+	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid) override;
 	virtual void PostActivateTile(UGridTile* InTile) override;
+	virtual void ShowTile(UGridTile* InTile) override;
+	virtual void HideTile(UGridTile* InTile) override;
 
 protected:
 	virtual void CalculateTiles(const TArray<UGridTile*>& InTiles);
