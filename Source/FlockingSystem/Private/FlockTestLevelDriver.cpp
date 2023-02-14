@@ -2,8 +2,10 @@
 
 
 #include "FlockTestLevelDriver.h"
-#include "../FlockingSystemGameMode.h"
-#include "../FlockingSystemCharacter.h"
+#include "../GridSystem/GameGrid.h"
+#include "../GridSystem/Layers/FlowFieldIntegrationLayer.h"
+#include "../GridSystem/Layers/FlowFieldVectorLayer.h"
+#include "../GridSystem/Layers/FlowFieldSolutionLayer.h"
 
 #include "EngineUtils.h"
 
@@ -12,38 +14,19 @@ void AFlockTestLevelDriver::BeginPlay()
 	Super::BeginPlay();
 	if (HasAuthority())
 	{
-		TMultiMap<UObject*, AFlockingSystemCharacter*> goalmap = TMultiMap<UObject*, AFlockingSystemCharacter*>();
 		UWorld* world = GetWorld();
-		AFlockingSystemGameMode * gm = world->GetAuthGameMode<AFlockingSystemGameMode>();
-
-		for (TObjectIterator<AFlockingSystemCharacter> Itr; Itr; ++Itr)
+		for (TObjectIterator<AGameGrid> Itr; Itr; ++Itr)
 		{
-			AFlockingSystemCharacter* character = *Itr;
-			AActor* goalactor = character->PreSetFlockGoal;
-			if (IsValid(goalactor))
+			AGameGrid * GameGrid = *Itr;
+			TArray<UGridTile*> gridtiles = GameGrid->GetTiles();
+			UFlowFieldSolutionLayer* solution = Cast<UFlowFieldSolutionLayer>(GameGrid->AddGridLayer(UFlowFieldSolutionLayer::StaticClass()));
+			
+			if (IsValid(solution) && gridtiles.Num())
 			{
-				goalmap.Emplace(goalactor, character);
+				solution->AddGoalTile(gridtiles[0]);
+				GameGrid->SetActiveLayer(solution);
+				solution->SetLayerVisibility(true);
 			}
-		}
-
-		TSet<UObject*> keys = TSet<UObject*>();
-		goalmap.GetKeys(keys);
-
-		for (auto& Elem : keys)
-		{
-			TArray<AFlockingSystemCharacter*> flock = TArray<AFlockingSystemCharacter*>();
-			goalmap.MultiFind(Elem, flock);
-
-			TSet<IFlockAgentInterface*> flockset = TSet<IFlockAgentInterface*>();
-			for (auto& flockmate : flock)
-			{
-				flockset.Emplace(flockmate);
-			}
-
-			gm->GetFlockManager()->CreateFlock(flockset, Cast<IFlockAgentGoalInterface>(Elem));
 		}
 	}
-
-
-
 }

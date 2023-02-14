@@ -47,7 +47,6 @@ public:
 
 /*Runtime*/
 protected:
-	UPROPERTY()
 	UFlock* CurrentFlock = nullptr;
 	FSetElementId FlockAgentID = FSetElementId();
 

@@ -25,7 +25,7 @@ FVector UGridTile::GetTileCenter() const
 	return TileCenter;
 }
 
-TArray<UGridTile*> UGridTile::GetNeighbors() const
+TArray<FGridTileNeighbor> UGridTile::GetNeighbors() const
 {
 	return Neighbors;
 }
@@ -80,7 +80,7 @@ void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 	}
 }
 
-void UGridTile::AddNeighbor(UGridTile* InNeighbor)
+void UGridTile::AddNeighbor(const FGridTileNeighbor& InNeighbor)
 {
 	Neighbors.AddUnique(InNeighbor);
 }

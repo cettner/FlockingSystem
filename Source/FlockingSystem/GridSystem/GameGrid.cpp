@@ -107,7 +107,7 @@ void AGameGrid::SetTileColor(int32 TileID, FLinearColor InTileColor)
 UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
 {
     UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
-    const int32 layerid = GridLayers.Emplace();
+    const int32 layerid = GridLayers.Emplace(retval);
     retval->SetLayerID(layerid);
     retval->LayerInitialize(this);
 
@@ -239,17 +239,40 @@ void AGameGrid::AddTileNeighbors()
         const int32 row = i / numcols;
         UGridTile* currenttile = GridData[i];
 
+
         if (TileShape == EGridTileType::SQUARE)
         {
             // Top Neighbor
             if (row < (numrows - 1))
             {
                 currenttile->AddNeighbor(GridData[i + numcols]);
+
+                //topright corner neighbor
+                if (col < numcols - 1)
+                {
+                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols + 1], true));
+                }
+                //topleft corner neighbor
+                if (col > 0)
+                {
+                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols - 1], true));
+                }
             }
             // Check bottom neighbor
             if (row > 0)
             {
                 currenttile->AddNeighbor(GridData[i - numcols]);
+                
+                //bottom right corner neighbor
+                if (col < numcols - 1)
+                {
+                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols + 1], true));
+                }
+                //bottomleft corner neighbor
+                if (col > 0)
+                {
+                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols - 1], true));
+                }
             }
             // Check left neighbor
             if (col > 0)
@@ -322,7 +345,7 @@ void AGameGrid::PostInitializeComponents()
 void AGameGrid::BeginPlay()
 {
     Super::BeginPlay();
-    DrawDebugData();
+    //DrawDebugData();
 }
 
 void AGameGrid::DrawDebugData()

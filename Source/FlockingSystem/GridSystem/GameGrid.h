@@ -40,7 +40,7 @@ public:
 		T* retval = nullptr;
 		for (int32 i = 0; i < GridLayers.Num(); i++)
 		{
-			if (T* layer = Cast<T>(GridLayers[i]))
+			if (T* layer = Cast<T>(this->GridLayers[i]))
 			{
 				retval = layer;
 				break;

@@ -7,12 +7,14 @@
 #include "FlowFieldCostLayer.generated.h"
 
 constexpr uint8 BLOCKED_TILE_COST = 0xFFU;
-constexpr uint8 FREE_TILE_COST = 0x00U;
+constexpr uint8 FREE_TILE_COST = 0x01U;
 
 UCLASS()
 class FLOCKINGSYSTEM_API UFlowFieldCostLayer : public UGridLayer
 {
 	GENERATED_BODY()
+
+	friend class UFlowFieldSolutionLayer;
 
 protected:
 	UFlowFieldCostLayer();

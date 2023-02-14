@@ -10,7 +10,10 @@
 
 AFlockAIController::AFlockAIController()
 {
-	SetPathFollowingComponent(CreateDefaultSubobject<UFlockPathFollowingComponent>(TEXT("PathFollowingComp")));
+	UFlockPathFollowingComponent* vectorfollowingcomponent = CreateDefaultSubobject<UFlockPathFollowingComponent>(TEXT("PathFollowingComp"));
+	SetPathFollowingComponent(vectorfollowingcomponent);
+	vectorfollowingcomponent->OnRequestFinished.AddUObject(this, &AAIController::OnMoveCompleted);
+
 	BlackboardComp = CreateDefaultSubobject<UBlackboardComponent>(TEXT("BlackboardComp"));
 	BehaviorComp = CreateDefaultSubobject<UBehaviorTreeComponent>(TEXT("BehaviorComp"));
 }
@@ -23,7 +26,6 @@ void AFlockAIController::OnPossess(APawn* InPawn)
 	{
 		BlackboardComp->InitializeBlackboard(*Minion->BehaviorTree->BlackboardAsset);
 		BehaviorComp->StartTree(*Minion->BehaviorTree);
-		SetGoalActor(Minion->PreSetFlockGoal);
 	}
 
 	

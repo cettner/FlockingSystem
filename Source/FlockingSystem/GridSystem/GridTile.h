@@ -19,6 +19,33 @@ enum EGridTileType
 };
 
 USTRUCT()
+struct FGridTileNeighbor
+{
+    GENERATED_USTRUCT_BODY()
+
+public:
+    FGridTileNeighbor()
+    {
+
+    }
+
+    FGridTileNeighbor(UGridTile* InNeighborTile, bool InIsCornerNeighbor = false)
+    {
+        NeighborTile = InNeighborTile;
+        bIsCornerNeighbor = InIsCornerNeighbor;
+    }
+
+    friend bool operator == (const FGridTileNeighbor& Myself, const FGridTileNeighbor& Other)
+    {
+        const bool retval = (Myself.NeighborTile == Other.NeighborTile) && (Myself.bIsCornerNeighbor == Other.bIsCornerNeighbor);
+        return retval;
+    }
+
+    bool bIsCornerNeighbor = false;
+    UGridTile* NeighborTile = nullptr;
+};
+
+USTRUCT()
 struct FLine
 {
     GENERATED_USTRUCT_BODY()
@@ -66,13 +93,13 @@ public:
     bool IsTileValid() const;
     FORCEINLINE FVector GetTileCenter() const;
     FORCEINLINE FVector GetTileNormal() const;
-    TArray<UGridTile*> GetNeighbors() const;
+    TArray<FGridTileNeighbor> GetNeighbors() const;
     void SetTileFillColor(const FLinearColor InColor);
     void SetTileVisible(const bool InIsVisible);
 
 protected: 
     void SetupTile(const int32 InID, const FVector InTileCenter);
-    void AddNeighbor(UGridTile* InNeighbor);
+    void AddNeighbor(const FGridTileNeighbor& InNeighbor);
     TSet<FLine> GetTileBoundaryLines() const;
     UWorld* GetWorld() const;
 
@@ -86,10 +113,8 @@ protected:
 
     FVector TileNormal = FVector();
 
-    FLinearColor TileFillColor = FLinearColor::Transparent;
-
     UPROPERTY(Transient)
-    TArray<UGridTile*> Neighbors = TArray<UGridTile*>();
+    TArray<FGridTileNeighbor> Neighbors = TArray<FGridTileNeighbor>();
 
     TSet<FLine> TileBounds = TSet<FLine>();
 

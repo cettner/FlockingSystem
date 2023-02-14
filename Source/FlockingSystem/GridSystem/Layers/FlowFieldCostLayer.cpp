@@ -7,7 +7,7 @@
 
 UFlowFieldCostLayer::UFlowFieldCostLayer()
 {
-	bIsLayerVisible = true;
+	bIsLayerVisible = false;
 
 	TraceQueryParams.TraceTag = "DebugCostTag";
 	TraceQueryParams.bTraceComplex = false;
@@ -68,7 +68,7 @@ void UFlowFieldCostLayer::CalculateTiles(const TArray<UGridTile*>& InTiles)
 
 uint8 UFlowFieldCostLayer::CalculateTileCost(const UGridTile* InTile)
 {
-	uint8 retval = 0U;
+	uint8 retval = FREE_TILE_COST;
 	UWorld* world = GetWorld();
 
 	if (world != nullptr)
@@ -96,7 +96,7 @@ uint8 UFlowFieldCostLayer::CalculateTileCost(const UGridTile* InTile)
 FLinearColor UFlowFieldCostLayer::GetCostFillColor(const uint8 InCost)
 {
 	static const float divisor = static_cast<float>(BLOCKED_TILE_COST);
-	const float costfloat = static_cast<float>(InCost);
+	const float costfloat = static_cast<float>(InCost) - FREE_TILE_COST;
 	const float intensity = costfloat / divisor;
 
 	const FLinearColor retval = FLinearColor(intensity, 1.0f - intensity, 0.0f, 1.0f);

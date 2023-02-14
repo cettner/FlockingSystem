@@ -9,10 +9,10 @@ UFlowFieldIntegrationLayer::UFlowFieldIntegrationLayer()
 	bActivatesOnStartup = false;
 }
 
-bool UFlowFieldIntegrationLayer::GetTileWeight(const UGridTile* InTile, uint32& OutCost) const
+bool UFlowFieldIntegrationLayer::GetTileWeight(const UGridTile* InTile, float& OutCost) const
 {
 	bool retval = false;
-	const uint32* costptr = WeightMap.Find(InTile);
+	const float* costptr = WeightMap.Find(InTile);
 	if (costptr != nullptr)
 	{
 		OutCost = *costptr;
@@ -23,7 +23,7 @@ bool UFlowFieldIntegrationLayer::GetTileWeight(const UGridTile* InTile, uint32& 
 
 void UFlowFieldIntegrationLayer::AddGoalTile(UGridTile* InTile)
 {
-	GoalTiles.AddUnique(InTile);
+	GoalTiles.Emplace(InTile);
 	WeightMap.Emplace(InTile, GOAL_TILE_WEIGHT);
 }
 
@@ -35,12 +35,12 @@ void UFlowFieldIntegrationLayer::AddGoalTile(TArray<UGridTile*> InTiles)
 	}
 }
 
-bool UFlowFieldIntegrationLayer::RemoveGoalTile(UGridTile* InTile, uint32 InReplacementWeight, bool InRebuildifSuccessful)
+bool UFlowFieldIntegrationLayer::RemoveGoalTile(UGridTile* InTile, float InReplacementWeight, bool InRebuildifSuccessful)
 {
 	return false;
 }
 
-bool UFlowFieldIntegrationLayer::RemoveGoalTile(TArray<UGridTile*> InTiles, uint32 InReplacementWeight, bool InRebuildifSuccessful)
+bool UFlowFieldIntegrationLayer::RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight, bool InRebuildifSuccessful)
 {
 	return false;
 }
@@ -51,13 +51,34 @@ bool UFlowFieldIntegrationLayer::DoesGoalExist() const
 	return retval;
 }
 
+void UFlowFieldIntegrationLayer::OnLayerActivate(TArray<UGridTile*> TileSubset)
+{
+	Super::OnLayerActivate();
+	BuildWeights();
+}
+
 void UFlowFieldIntegrationLayer::ShowTile(UGridTile* InTile)
 {
-	uint32 tileweight;
+	float tileweight;
 	const FVector tilecenter = InTile->GetTileCenter();
+	const int32 tileid = InTile->GetTileID();
 	if (GetTileWeight(InTile, tileweight))
 	{
-		DrawDebugString(GetWorld(), tilecenter, FString::FromInt(tileweight), GetGameGrid(), FColor::Green);
+		const FString idstring = "ID : " + FString::FromInt(tileid) + "\n";
+		FString weightstring;
+
+		if (tileweight >= UNVISITED_TILE_WEIGHT)
+		{
+			weightstring = "Weight : MAX";
+		}
+		else
+		{
+			weightstring = "Weight : " + FString::SanitizeFloat(tileweight, 2);
+		}
+
+		const FString debugstring = idstring + weightstring;
+
+		DrawDebugString(GetWorld(), tilecenter, debugstring, GetGameGrid(), FColor::Magenta);
 	}
 	else
 	{
@@ -68,7 +89,7 @@ void UFlowFieldIntegrationLayer::ShowTile(UGridTile* InTile)
 
 void UFlowFieldIntegrationLayer::HideTile(UGridTile* InTile)
 {
-
+	FlushDebugStrings(GetWorld());
 }
 
 void UFlowFieldIntegrationLayer::RebuildWeights()
@@ -77,49 +98,75 @@ void UFlowFieldIntegrationLayer::RebuildWeights()
 	{
 		WeightMap.Emplace(ActiveTiles[i], UNVISITED_TILE_WEIGHT);
 	}
-	for (int i = 0; i < GoalTiles.Num(); i++)
+	for (UGridTile*& goaltile : GoalTiles)
 	{
-		WeightMap.Emplace(GoalTiles[i], GOAL_TILE_WEIGHT);
+		WeightMap.Emplace(goaltile, GOAL_TILE_WEIGHT);
 	}
 }
 
 void UFlowFieldIntegrationLayer::BuildWeights()
 {
+	/*set the value of all tiles except the goal(s) to max / unexplored value*/
 	RebuildWeights();
-	TArray<UGridTile*> openlist = GoalTiles;
 	if (DoesGoalExist())
 	{
-		UFlowFieldCostLayer* costfield = GetCostField();
-		while (openlist.Num() > 0)
+		/*create a list of tiles that need to be explored, starting at the goals and branching out as the algorithm extends*/
+		TQueue<UGridTile*> openlist = TQueue<UGridTile*>();
+		/*The Queue class doesnt support internal retrival so this set lets us check whats in openlist*/
+		TSet<UGridTile*> visitedlist = TSet<UGridTile*>(GoalTiles);
+		for (UGridTile *& goaltile : GoalTiles)
 		{
-			UGridTile* firsttile = openlist.Pop(false);
-			TArray<UGridTile*> neighbors = firsttile->GetNeighbors();
+			openlist.Enqueue(goaltile);
+		}
+
+		UFlowFieldCostLayer* costfield = GetCostField();
+		UGridTile* roottile;
+		/*While Tiles need to be explored, get the one at the front of the list*/
+		while (openlist.Dequeue(roottile))
+		{
+			visitedlist.Remove(roottile);
+			TArray<FGridTileNeighbor> neighbors = roottile->GetNeighbors();
 
 			for (int i = 0; i < neighbors.Num(); i++)
 			{
-				UGridTile*& neighbor = neighbors[i];
-				uint32 rootweight;
-				uint32 neighborweight; 
+				UGridTile*& neighbor = neighbors[i].NeighborTile;
+				float rootweight;
+				float neighborweight; 
 				uint8 neighborcost;
+				float neighborcostfloat;
 
-				const bool rootweightsuccess = GetTileWeight(firsttile, rootweight);
+				/*Security Checking, make sure that the tiles being aquired are valid and costs have been computed  correctly*/
+				const bool rootweightsuccess = GetTileWeight(roottile, rootweight);
 				const bool neighborweightsuccess = GetTileWeight(neighbor, neighborweight);
 				const bool neighborcostsuccess = costfield->GetTileCost(neighbor, neighborcost);
-				if (neighborweightsuccess && rootweightsuccess && neighborcostsuccess)
+				const bool tilecheck = neighborweightsuccess && rootweightsuccess && neighborcostsuccess;
+
+				neighborcostfloat = static_cast<float>(neighborcost);
+				if (neighbors[i].bIsCornerNeighbor == true)
 				{
-					uint32 totalcost = rootweight + static_cast<uint32>(neighborcost);
+					neighborweight += static_cast<float>(DOUBLE_UE_SQRT_2);
+					neighborcostfloat += static_cast<float>(DOUBLE_UE_SQRT_2);
+				}
+
+				checkf(tilecheck, TEXT("UFlowFieldIntegrationLayer::BuildWeights : Invalid Tile retrieval for layer"))
+				/*Skip any neighbor that is blocked*/
+				if (neighborcost != BLOCKED_TILE_COST)
+				{
+					/*Compute the totalcost of the trip from the explored tile to the neighbor tile/*/
+					const float totalcost = rootweight + neighborcostfloat;
+					/*If the tile cost is lower than the current explored weight set the value*/
 					if (totalcost < neighborweight)
 					{
-						openlist.AddUnique(neighbor);
+						/*if we're already going to explore it dont add it again*/
+						if (!visitedlist.Contains(neighbor))
+						{
+							openlist.Enqueue(neighbor);
+							visitedlist.Emplace(neighbor);
+						}
+						/*Assign the new Weight*/
+						WeightMap.Emplace(neighbor, totalcost);
 					}
-
-					WeightMap.Emplace(GoalTiles[i], totalcost);
 				}
-				else
-				{
-					//todo log out failure....
-				}
- 
 			}
 		}
 	}
@@ -127,5 +174,10 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 
 UFlowFieldCostLayer* UFlowFieldIntegrationLayer::GetCostField() const
 {
-	return GetGameGrid()->GetLayerOfClass<UFlowFieldCostLayer>();
+	return CostField;
+}
+
+void UFlowFieldIntegrationLayer::SetCostLayer(UFlowFieldCostLayer* InCostLayer)
+{
+	CostField = InCostLayer;
 }
