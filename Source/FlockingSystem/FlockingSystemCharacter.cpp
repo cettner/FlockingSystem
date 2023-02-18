@@ -70,12 +70,6 @@ void AFlockingSystemCharacter::PostInitializeComponents()
 void AFlockingSystemCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	AFlockAIController* aic = GetController<AFlockAIController>();
-
-	if (aic)
-	{
-		aic->SetGoalActor(PreSetFlockGoal);
-	}
 }
 
 void AFlockingSystemCharacter::JoinFlock(UFlock* InFlock)

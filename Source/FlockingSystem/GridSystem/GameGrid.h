@@ -7,6 +7,7 @@
 #include "GridTile.h"
 #include "GridLayer.h"
 #include "ProceduralMeshComponent.h"
+#include "NavigationData.h"
 
 #include "GameGrid.generated.h"
 
@@ -15,7 +16,7 @@
 
 
 UCLASS()
-class FLOCKINGSYSTEM_API AGameGrid : public AActor
+class FLOCKINGSYSTEM_API AGameGrid : public ANavigationData
 {
 	GENERATED_BODY()
 

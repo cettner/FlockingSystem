@@ -12,7 +12,8 @@
 				"CoreUObject",
 				"AIModule",
 				"Engine",
-				"FunctionalTesting"
+				"FunctionalTesting",
+				"NavigationSystem"
 			]
 		}
 	],

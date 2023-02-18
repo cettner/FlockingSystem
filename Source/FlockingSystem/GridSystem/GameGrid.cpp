@@ -331,7 +331,8 @@ void AGameGrid::InitializeLayers()
 
 void AGameGrid::PostInitializeComponents()
 {
-	Super::PostInitializeComponents();
+    /*Use AActor because Navigation Datas Postinitialize is reliant on navigationsystemv1*/
+	AActor::PostInitializeComponents();
 
     TSet<FLine> lineset = TSet<FLine>();
     if (BuildGridData(lineset)  && IsValid(LinesProceduralMesh))

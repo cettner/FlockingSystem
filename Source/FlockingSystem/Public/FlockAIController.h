@@ -18,6 +18,14 @@ public:
 	AFlockAIController();
 	virtual void OnPossess(APawn* InPawn) override;
 
+	/*Calls Request Move*/
+	virtual FPathFollowingRequestResult MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath = nullptr) override;
+
+	/** Passes move request and path object to path following */
+	virtual FAIRequestID RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path) override;
+
+	virtual void FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const override;
+
 	virtual void SetGoalActor(AActor* InGoal);
 
 protected:

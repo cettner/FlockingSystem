@@ -53,3 +53,8 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 	}
 
 }
+
+FAIRequestID UFlockPathFollowingComponent::RequestMove(const FAIMoveRequest& RequestData, FNavPathSharedPtr InPath)
+{
+	return Super::RequestMove(RequestData, InPath);
+}

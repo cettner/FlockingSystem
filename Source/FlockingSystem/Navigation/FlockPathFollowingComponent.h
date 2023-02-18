@@ -22,5 +22,6 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 
 	protected:
 		virtual void UpdatePathSegment() override;
+		virtual FAIRequestID RequestMove(const FAIMoveRequest& RequestData, FNavPathSharedPtr InPath) override;
 	
 };

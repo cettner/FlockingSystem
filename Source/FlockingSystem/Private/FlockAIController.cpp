@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "FlockAIController.h"
 #include "../Navigation/FlockPathFollowingComponent.h"
+#include "../Navigation/VectorFieldNavigationSystem.h"
 #include "../FlockingSystemCharacter.h"
 
 #include "BehaviorTree/BlackboardComponent.h"
@@ -29,6 +30,29 @@ void AFlockAIController::OnPossess(APawn* InPawn)
 	}
 
 	
+}
+
+FPathFollowingRequestResult AFlockAIController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)
+{
+	FPathFollowingRequestResult ResultData;
+	ResultData.Code = EPathFollowingRequestResult::Failed;
+
+	return Super::MoveTo(MoveRequest, OutPath);
+}
+
+FAIRequestID AFlockAIController::RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path)
+{
+	return Super::RequestMove(MoveRequest, Path);
+}
+
+void AFlockAIController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const
+{
+	UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
+	
+	if (NavSys)
+	{
+		
+	}
 }
 
 void AFlockAIController::SetGoalActor(AActor* InGoal)
