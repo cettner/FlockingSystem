@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
+#include "NavigationSystemTypes.h"
 
 #include "../GridLayer.h"
 #include "FlowFieldCostLayer.h"
@@ -25,10 +25,13 @@ public:
 	void AddGoalTile(UGridTile* InTile, const bool bRebuildWeights = false);
 	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);
 	bool HasGoal() const;
+	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;
 	virtual bool BuildSolution();
 	virtual bool RequiresCostRebuild() const;
 	virtual bool RequiresWeightRebuild() const;
-
+	virtual bool IsSolutionReady() const;
+	virtual bool CanUseSolutionforQuery(const FPathFindingQuery& Query) const;
+	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid) override;

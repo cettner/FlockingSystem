@@ -2,11 +2,16 @@
 
 
 #include "GameGrid.h"
+#include "NavigationSystem.h"
+#include "../Navigation/VectorFieldNavigationSystem.h"
+
 
 AGameGrid::AGameGrid() : Super()
 {
     LinesProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Grid Line Drawing Component"));
     SelectionProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Tile Drawing Component"));
+
+    FindPathImplementation = FindVectorField;
 }
 
 int32 AGameGrid::GetMaxTiles() const
@@ -102,6 +107,33 @@ void AGameGrid::SetTileColor(int32 TileID, FLinearColor InTileColor)
     {
         TileMaterial->SetVectorParameterValue(ColorParameterName, InTileColor);
     }
+}
+
+UGridTile* AGameGrid::GetTileFromLocation(const FVector& InLocation) const
+{
+    UGridTile* retval = nullptr;
+
+    if (TileShape == EGridTileType::SQUARE)
+    {
+        const int32 maxrows = GetMaxRows();
+        const int32 maxcols = GetMaxCols();
+        const FVector gridstartlocation = GetActorLocation();
+        const float ydiff = (InLocation.Y - gridstartlocation.Y);
+        const float xdiff = (InLocation.X - gridstartlocation.X);
+
+        const int32 approxcol = floorf(ydiff / (TileEdgeLength));
+        const int32 approxrow = floorf(xdiff / (TileEdgeLength));
+
+        const int32 approxindex = (approxrow * maxcols) + approxcol;
+
+        if (approxindex > INVALID_TILE_ID && approxindex < GridData.Num())
+        {
+            retval = GridData[approxindex];
+        }
+    }
+
+
+    return retval;
 }
 
 UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
@@ -346,7 +378,7 @@ void AGameGrid::PostInitializeComponents()
 void AGameGrid::BeginPlay()
 {
     Super::BeginPlay();
-    //DrawDebugData();
+    DrawDebugData();
 }
 
 void AGameGrid::DrawDebugData()
@@ -483,4 +515,109 @@ void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineE
 
 	Verts.Append(newverticies, 4);
 	delete[] newverticies;
+}
+
+
+/*****Start Navigation ***/
+/*Equivalent of findpath*/
+FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
+{
+    const ANavigationData* selfdata = Query.NavData.Get();
+    AGameGrid* selfptr = const_cast<AGameGrid*>(Cast<AGameGrid>(selfdata));
+    check(selfptr != nullptr);
+
+    FPathFindingResult retval(ENavigationQueryResult::Error);
+    FNavigationPath* navpath = Query.PathInstanceToFill.Get();
+    FVectorFieldPath* navfieldpath = navpath ? navpath->CastPath<FVectorFieldPath>() : nullptr;
+
+    if (navfieldpath)
+    {
+        retval.Path = Query.PathInstanceToFill;
+        navfieldpath->ResetForRepath();
+    }
+    else
+    {
+        retval.Path = selfptr->CreatePathInstance<FVectorFieldPath>(Query);
+        navpath = retval.Path.Get();
+        navfieldpath = navpath ? navpath->CastPath<FVectorFieldPath>() : nullptr;
+
+        UFlowFieldSolutionLayer* potentialsolution = selfptr->GetSolutionFromQuery(Query);
+        if (potentialsolution)
+        {
+            navfieldpath->InitSolution(potentialsolution);
+            retval.Result = ENavigationQueryResult::Success;
+        }
+        else
+        {
+           UFlowFieldSolutionLayer * solutionlayer =  selfptr->BuildSolutionFromQuery(Query);
+           if (solutionlayer)
+           {
+               navfieldpath->InitSolution(solutionlayer); 
+               retval.Result = ENavigationQueryResult::Success;
+           }
+           else
+           {
+               retval.Result = ENavigationQueryResult::Fail;
+           }
+        }
+    }
+
+    return retval;
+}
+
+void AGameGrid::RequestNavigationRegistration()
+{
+    if (IsRegistered() == false && HasAnyFlags(RF_ClassDefaultObject) == false)
+    {
+        UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
+        if (NavSys)
+        {
+            NavSys->RequestRegistrationDeferred(*this);
+        }
+    }
+}
+
+UFlowFieldSolutionLayer* AGameGrid::GetSolutionFromQuery(const FPathFindingQuery& Query) const
+{
+    UFlowFieldSolutionLayer* retval = nullptr;
+    const FVector endgoallocation = Query.EndLocation;
+
+    for (int i = 0; i < GridLayers.Num(); i++)
+    {
+      if (UFlowFieldSolutionLayer* solution = Cast<UFlowFieldSolutionLayer>(GridLayers[i]))
+      {
+          if (solution->CanUseSolutionforQuery(Query))
+          {
+              retval = solution;
+              break;
+          }
+      }
+    }
+
+    return retval;
+}
+
+UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQuery& Query)
+{
+    UFlowFieldSolutionLayer* retval = nullptr;
+    const FVector endlocation = Query.EndLocation;
+    UGridTile* basegoaltile = GetTileFromLocation(endlocation);
+
+    if (basegoaltile != nullptr)
+    {
+        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass()));
+        retval->AddGoalTile(basegoaltile);
+        SetActiveLayer(retval);
+    }
+
+
+    return retval;
+}
+
+void AGameGrid::PostLoad()
+{
+    UObject::PostLoad();
+
+    bNetLoadOnClient = FNavigationSystem::ShouldLoadNavigationOnClient(*this);
+    RequestNavigationRegistration();
 }

@@ -3,6 +3,39 @@
 
 #include "VectorFieldNavigationSystem.h"
 
+#include "EngineUtils.h"
+
+bool UVectorFieldNavigationSystem::RegisterNavData(ANavigationData* InNavData)
+{
+	FScopeLock Lock(&NavDataRegistration);
+	const bool retval = NavDataSet.AddUnique(InNavData) > INDEX_NONE;
+	InNavData->OnRegistered();
+
+
+
+	return retval;
+}
+
+void UVectorFieldNavigationSystem::UnRegisterNavData(ANavigationData* InNavData)
+{
+}
+
+FPathFindingResult UVectorFieldNavigationSystem::FindPathSync(FPathFindingQuery& InQuery)
+{
+	FPathFindingResult retval(ENavigationQueryResult::Error);
+	if (InQuery.NavData.IsValid() == false)
+	{
+
+	}
+	else
+	{
+		retval = InQuery.NavData->FindPath(InQuery.NavAgentProperties, InQuery);
+	}
+
+
+	return retval;
+}
+
 void UVectorFieldNavigationSystem::Tick(float DeltaSeconds)
 {
 	int debug = 9;
@@ -31,8 +64,115 @@ bool UVectorFieldNavigationSystem::IsNavigationBuilt(const AWorldSettings* Setti
 
 void UVectorFieldNavigationSystem::ApplyWorldOffset(const FVector& InOffset, bool bWorldShift)
 {
+
 }
 
-void UVectorFieldNavigationSystem::InitializeForWorld(UWorld& World, FNavigationSystemRunMode Mode)
+void UVectorFieldNavigationSystem::InitializeForWorld(UWorld& InWorld, FNavigationSystemRunMode Mode)
 {
+	for (TActorIterator<ANavigationData> It(&InWorld); It; ++It)
+	{
+		ANavigationData* NavData = (*It);
+		if (NavData != NULL)
+		{
+			const bool Result = RegisterNavData(NavData);
+			if (Result == true)
+			{
+				// allowing full rebuild of the entire navmesh only for the fully dynamic generation modes
+				// other modes partly rely on the serialized data and full rebuild would wipe it out
+				NavData->RebuildAll();
+			}
+			else
+			{
+				NavData->CleanUpAndMarkPendingKill();
+			}
+		}
+	}
+}
+
+
+
+void UVectorFieldNavigationSystem::RequestRegistrationDeferred(ANavigationData& NavData)
+{
+	FScopeLock RegistrationLock(&NavDataRegistrationSection);
+
+	if (NavDataRegistrationQueue.Num() < 10)
+	{
+		NavDataRegistrationQueue.AddUnique(&NavData);
+	}
+}
+
+ANavigationData* UVectorFieldNavigationSystem::GetNavDataForProps(const FNavAgentProperties& AgentProperties, const FVector& AgentLocation, const FVector& Extent) const
+{
+
+	UE_CLOG(!AgentProperties.IsValid(), LogNavigation, Warning, TEXT("Looking for NavData using invalid FNavAgentProperties."));
+
+	ANavigationData* retval = nullptr;
+
+	if (NavDataSet.Num() == 1U)
+	{
+		retval = NavDataSet[0];
+	}
+
+	/*
+	const TWeakObjectPtr<ANavigationData>* NavDataForAgent = AgentToNavDataMap.Find(AgentProperties);
+	ANavigationData* NavDataInstance = NavDataForAgent ? NavDataForAgent->Get() : nullptr;
+
+	if (NavDataInstance == nullptr)
+	{
+		TArray<FNavAgentProperties> AgentPropertiesList;
+		AgentToNavDataMap.GenerateKeyArray(AgentPropertiesList);
+
+		FNavAgentProperties BestFitNavAgent;
+		float BestExcessHeight = -FLT_MAX;
+		float BestExcessRadius = -FLT_MAX;
+		float ExcessRadius = -FLT_MAX;
+		float ExcessHeight = -FLT_MAX;
+		const float AgentHeight = AgentProperties.AgentHeight;
+
+		for (TArray<FNavAgentProperties>::TConstIterator It(AgentPropertiesList); It; ++It)
+		{
+			const FNavAgentProperties& NavIt = *It;
+			const bool bNavClassMatch = NavIt.IsNavDataMatching(AgentProperties);
+			if (!bNavClassMatch)
+			{
+				continue;
+			}
+
+			ExcessRadius = NavIt.AgentRadius - AgentProperties.AgentRadius;
+			ExcessHeight =  (NavIt.AgentHeight - AgentHeight);
+
+			const bool bExcessRadiusIsBetter = ((ExcessRadius == 0) && (BestExcessRadius != 0))
+				|| ((ExcessRadius > 0) && (BestExcessRadius < 0))
+				|| ((ExcessRadius > 0) && (BestExcessRadius > 0) && (ExcessRadius < BestExcessRadius))
+				|| ((ExcessRadius < 0) && (BestExcessRadius < 0) && (ExcessRadius > BestExcessRadius));
+			const bool bExcessHeightIsBetter = ((ExcessHeight == 0) && (BestExcessHeight != 0))
+				|| ((ExcessHeight > 0) && (BestExcessHeight < 0))
+				|| ((ExcessHeight > 0) && (BestExcessHeight > 0) && (ExcessHeight < BestExcessHeight))
+				|| ((ExcessHeight < 0) && (BestExcessHeight < 0) && (ExcessHeight > BestExcessHeight));
+			const bool bBestIsValid = (BestExcessRadius >= 0) && (BestExcessHeight >= 0);
+			const bool bRadiusEquals = (ExcessRadius == BestExcessRadius);
+			const bool bHeightEquals = (ExcessHeight == BestExcessHeight);
+
+			bool bValuesAreBest = ((bExcessRadiusIsBetter || bRadiusEquals) && (bExcessHeightIsBetter || bHeightEquals));
+			if (!bValuesAreBest && !bBestIsValid)
+			{
+				bValuesAreBest = bExcessRadiusIsBetter || (bRadiusEquals && bExcessHeightIsBetter);
+			}
+
+			if (bValuesAreBest)
+			{
+				BestFitNavAgent = NavIt;
+				BestExcessHeight = ExcessHeight;
+				BestExcessRadius = ExcessRadius;
+			}
+		}
+
+		if (BestFitNavAgent.IsValid())
+		{
+			NavDataForAgent = AgentToNavDataMap.Find(BestFitNavAgent);
+			NavDataInstance = NavDataForAgent ? NavDataForAgent->Get() : nullptr;
+		}
+	}
+	*/
+	return retval;
 }

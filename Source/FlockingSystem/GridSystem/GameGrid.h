@@ -9,10 +9,31 @@
 #include "ProceduralMeshComponent.h"
 #include "NavigationData.h"
 
+
+#include "Layers/FlowFieldSolutionLayer.h"
 #include "GameGrid.generated.h"
 
 
+struct FVectorFieldPath : FNavigationPath
+{
+	typedef FNavigationPath Super;
+public:
+	void InitSolution(UFlowFieldSolutionLayer* InSolution)
+	{
+		if (InSolution != nullptr)
+		{
+			SolutionIndex = InSolution->GetLayerID();
+			PathPoints.Add(PathFindingQueryData.StartLocation);
+			PathPoints.Add(PathFindingQueryData.EndLocation);
+			bIsReady = InSolution->IsSolutionReady();
+		}
 
+	}
+	FORCEINLINE int32 GetSolutionID() const { return SolutionIndex; }
+protected:
+	int32 SolutionIndex = INVALID_LAYER_ID;
+
+};
 
 
 UCLASS()
@@ -34,6 +55,7 @@ public:
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
 	virtual void SetTileVisible(int32 TileID, bool bIsVisble) const;
 	virtual void SetTileColor(int32 TileID, FLinearColor InTileColor);
+	virtual UGridTile* GetTileFromLocation(const FVector& InLocation) const;
 	
 	template<typename T>
 	T* GetLayerOfClass() const
@@ -49,6 +71,19 @@ public:
 		}
 
 		return retval;
+	}
+
+	template<typename T>
+	T * GetLayerByIndex(int32 InLayerID) const
+	{
+		if (InLayerID > INVALID_LAYER_ID && InLayerID < GridLayers.Num())
+		{
+			return Cast<T>(GridLayers[InLayerID]);
+		}
+		else
+		{
+			return nullptr;
+		}
 	}
 
 public:
@@ -73,10 +108,21 @@ protected:
 protected:
 	virtual void BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris);
 
+	/*Navigation*/
+protected:
+	/*This Function is a redirect from ANavigationData::FindPathImplementation function pointer, this is done to supercede virtual overhead,
+	matched with the navmesh implementation*/
+	static FPathFindingResult FindVectorField(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query);
+	void RequestNavigationRegistration();
+	UFlowFieldSolutionLayer* GetSolutionFromQuery(const FPathFindingQuery& Query) const;
+	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FPathFindingQuery& Query);
+
 protected:
 	virtual void PostInitializeComponents() override;
 
 	virtual void BeginPlay() override;
+
+	virtual void PostLoad() override;
 
 protected:
 	virtual void DrawDebugData();

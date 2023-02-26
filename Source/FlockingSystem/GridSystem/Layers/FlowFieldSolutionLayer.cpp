@@ -38,6 +38,12 @@ bool UFlowFieldSolutionLayer::HasGoal() const
 	return retval;
 }
 
+bool UFlowFieldSolutionLayer::IsGoalTile(const UGridTile* InGridTile) const
+{
+	const bool retval = IntegrationLayer->IsGoalTile(InGridTile);
+	return retval;
+}
+
 bool UFlowFieldSolutionLayer::BuildSolution()
 {
 	bool retval = true;
@@ -72,6 +78,21 @@ bool UFlowFieldSolutionLayer::RequiresCostRebuild() const
 bool UFlowFieldSolutionLayer::RequiresWeightRebuild() const
 {
 	return bNeedsWeightRebuild;
+}
+
+bool UFlowFieldSolutionLayer::IsSolutionReady() const
+{
+	return HasGoal() && !bNeedsCostRebuild && !bNeedsWeightRebuild;
+}
+
+bool UFlowFieldSolutionLayer::CanUseSolutionforQuery(const FPathFindingQuery& Query) const
+{
+	return false;
+}
+
+bool UFlowFieldSolutionLayer::GetFlowVectorForTile(const UGridTile* InTile, FVector& OutTile) const
+{
+	return VectorLayer->GetTileVector(InTile, OutTile);
 }
 
 void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid)

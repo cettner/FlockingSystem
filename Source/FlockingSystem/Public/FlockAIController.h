@@ -29,6 +29,11 @@ public:
 	virtual void SetGoalActor(AActor* InGoal);
 
 protected:
+
+	virtual bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const;
+
+
+protected:
 	UPROPERTY(transient)
 	class UBlackboardComponent* BlackboardComp;
 
