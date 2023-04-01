@@ -18,22 +18,16 @@ AFlockingSystemPlayerController::AFlockingSystemPlayerController()
 	FollowTime = 0.f;
 }
 
-void AFlockingSystemPlayerController::BeginPlay()
+void AFlockingSystemPlayerController::SetupInputComponent()
 {
-	// Call the base class  
-	Super::BeginPlay();
+	// set up gameplay key bindings
+	Super::SetupInputComponent();
 
 	//Add Input Mapping Context
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
 		Subsystem->AddMappingContext(DefaultMappingContext, 0);
 	}
-}
-
-void AFlockingSystemPlayerController::SetupInputComponent()
-{
-	// set up gameplay key bindings
-	Super::SetupInputComponent();
 
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent))
@@ -66,14 +60,6 @@ void AFlockingSystemPlayerController::OnSetDestinationTriggered()
 	{
 		CachedDestination = Hit.Location;
 	}
-	
-	// Move towards mouse pointer or touch
-	APawn* ControlledPawn = GetPawn();
-	if (ControlledPawn != nullptr)
-	{
-		FVector WorldDirection = (CachedDestination - ControlledPawn->GetActorLocation()).GetSafeNormal();
-		ControlledPawn->AddMovementInput(WorldDirection, 1.0, false);
-	}
 }
 
 void AFlockingSystemPlayerController::OnSetDestinationReleased()
@@ -81,8 +67,6 @@ void AFlockingSystemPlayerController::OnSetDestinationReleased()
 	// If it was a short press
 	if (FollowTime <= ShortPressThreshold)
 	{
-		// We move there and spawn some particles
-		UAIBlueprintHelperLibrary::SimpleMoveToLocation(this, CachedDestination);
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
 	}
 

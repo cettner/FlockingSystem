@@ -44,9 +44,6 @@ protected:
 	uint32 bMoveToMouseCursor : 1;
 
 	virtual void SetupInputComponent() override;
-	
-	// To add mapping context
-	virtual void BeginPlay();
 
 	/** Input handlers for SetDestination action. */
 	void OnInputStarted();
