@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 
 #include "GameGrid.h"
+#include "GridLayerComponent.h"
 #include "GridAttachmentActor.generated.h"
 
 UCLASS()
@@ -19,6 +20,7 @@ public:
 
 	virtual void SetRootTile(UGridTile* InRootTile);
 	AGameGrid* GetGameGrid() const;
+	FORCEINLINE UGridTile * GetRootTile() const{ return RootTile; }
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -30,6 +32,9 @@ protected:
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	UStaticMeshComponent* DebugMeshComp = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	UGridLayerComponent* GridLayerComp = nullptr;
 
 protected:
 	UGridTile * RootTile = nullptr;

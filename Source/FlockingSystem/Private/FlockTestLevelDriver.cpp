@@ -14,6 +14,8 @@
 void AFlockTestLevelDriver::BeginPlay()
 {
 	Super::BeginPlay();
+
+	/*
 	if (HasAuthority())
 	{
 		UWorld* world = GetWorld();
@@ -43,9 +45,7 @@ void AFlockTestLevelDriver::BeginPlay()
 				}
 			}
 		}
-
-
-
-
+		
 	}
+	*/
 }

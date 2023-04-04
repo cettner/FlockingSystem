@@ -12,6 +12,9 @@ AGridAttachmentActor::AGridAttachmentActor()
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
     DebugMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugMeshComp"));
     DebugMeshComp->SetupAttachment(RootComponent);
+
+    GridLayerComp = CreateDefaultSubobject<UGridLayerComponent>(TEXT("GridLayerComp"));
+    GridLayerComp->SetupAttachment(RootComponent);
 }
 
 void AGridAttachmentActor::SetRootTile(UGridTile* InRootTile)
@@ -110,6 +113,8 @@ void AGridAttachmentActor::PostEditMove(bool bFinished)
 
     if (bFinished == true)
     {
+        UGridTile* prevtile = GetRootTile();
+
         AGameGrid* foundgrid = FindGrid(GetWorld());
 
         if (IsValid(foundgrid))

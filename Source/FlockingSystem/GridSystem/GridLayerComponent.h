@@ -4,25 +4,43 @@
 
 #include "CoreMinimal.h"
 #include "Components/SceneComponent.h"
+#include "Components/BoxComponent.h"
+
 
 #include "GridLayer.h"
+#include "GameGrid.h"
 #include "GridLayerComponent.generated.h"
 
 
 UCLASS()
-class FLOCKINGSYSTEM_API UGridLayerComponent : public USceneComponent
+class FLOCKINGSYSTEM_API UGridLayerComponent : public UBoxComponent
 {
 	GENERATED_BODY()
 
 public:	
 	// Sets default values for this component's properties
 	UGridLayerComponent();
+	virtual TArray<UGridTile*> GetGridSpace() const;
 
 protected:
-
-		
+	virtual AGameGrid* GetGameGrid() const;
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UGridLayer> LayerClass = nullptr;
+	virtual void OnRegister() override;
+
+#if WITH_EDITOR
+protected:
+	virtual void PostEditComponentMove(bool bFinished) override;
+	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
+	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
+#endif
+
+
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Layers")
+	TArray<TSubclassOf<UGridLayer>> LayerClasses = TArray<TSubclassOf<UGridLayer>>();
+
+protected:
+	UPROPERTY(Transient)
+	TArray<UGridLayer*> ActiveLayers = TArray<UGridLayer*>();
 };
