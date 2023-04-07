@@ -87,8 +87,8 @@ public:
 	}
 
 public:
-	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass);
-	virtual void SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset = TArray<UGridTile*>());
+	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator = nullptr);
+	virtual void SetActiveLayer(UGridLayer* InLayer);
 
 protected:
 	virtual void DrawGridLines(const TSet<FLine>& InGridLines);

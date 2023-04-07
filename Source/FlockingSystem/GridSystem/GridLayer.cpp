@@ -4,24 +4,23 @@
 #include "GridLayer.h"
 #include "GameGrid.h"
 
-void UGridLayer::LayerInitialize(AGameGrid* InGrid)
+void UGridLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
 {
 	ParentGrid = InGrid;
+	ActiveTiles = TArray<UGridTile*>(InActiveTiles);
+	Applicator = InApplicator;
 }
 
-void UGridLayer::OnLayerActivate(TArray<UGridTile*> TileSubset)
+void UGridLayer::OnLayerActivate()
 {
-	const TArray<UGridTile*>& gridtiles = TileSubset.Num() > 0 ? TileSubset : ParentGrid->GetTiles();
-
-	for (int i = 0; i < gridtiles.Num(); i++)
+	for (int i = 0; i < ActiveTiles.Num(); i++)
 	{
-		ActiveTiles.Emplace(gridtiles[i]);
-		PostActivateTile(gridtiles[i]);
+		PostActivateTile(ActiveTiles[i]);
 	}
 
 }
 
-uint32 UGridLayer::OnLayerDeactivate(TArray<UGridTile*> TileSubset)
+uint32 UGridLayer::OnLayerDeactivate()
 {
 	return false;
 }
@@ -70,4 +69,42 @@ void UGridLayer::SetLayerVisibility(bool InbIsVisible)
 	{
 		OnHideLayer();
 	}
+}
+
+void UGridLayer::AddTile(UGridTile* InTile, const bool& InbShouldActivate)
+{
+	int32 isunique = TileSet.AddUnique(InTile);
+
+	if ((isunique > INDEX_NONE) && InbShouldActivate)
+	{
+		ActiveTiles.Emplace(InTile);
+		PostActivateTile(InTile);
+	}
+}
+
+bool UGridLayer::RemoveTile(UGridTile* InTile)
+{
+	int32 removesuccess = ActiveTiles.Remove(InTile);
+
+	if (removesuccess > (int32)0)
+	{
+		PostDeactivateTile(InTile);
+	}
+
+	removesuccess += TileSet.Remove(InTile);
+	const bool retval = removesuccess > (int32)0;
+
+	return retval;
+}
+
+TArray<UGridTile*> UGridLayer::GetDefaultTileSet(const AGameGrid* InGrid) const
+{
+	TArray<UGridTile*> retval = TArray<UGridTile*>();
+
+	if (IsValid(InGrid))
+	{
+		retval = InGrid->GetTiles();
+	}
+
+	return retval;
 }

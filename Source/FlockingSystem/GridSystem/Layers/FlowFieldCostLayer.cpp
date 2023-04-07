@@ -28,11 +28,6 @@ bool UFlowFieldCostLayer::GetTileCost(const UGridTile* InTile, uint8& OutCost) c
 	return retval;
 }
 
-void UFlowFieldCostLayer::LayerInitialize(AGameGrid* InGrid)
-{
-	Super::LayerInitialize(InGrid);
-}
-
 void UFlowFieldCostLayer::PostActivateTile(UGridTile* InTile)
 {
 	const uint8 tilecost = CalculateTileCost(InTile);

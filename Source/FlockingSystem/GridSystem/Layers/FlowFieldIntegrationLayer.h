@@ -32,7 +32,7 @@ public:
 	bool DoesGoalExist() const;
 
 public:
-	virtual void OnLayerActivate(TArray<UGridTile*> TileSubset = TArray<UGridTile*>()) override;
+	virtual void OnLayerActivate() override;
 	virtual void ShowTile(UGridTile* InTile) override;
 	virtual void HideTile(UGridTile* InTile) override;
 

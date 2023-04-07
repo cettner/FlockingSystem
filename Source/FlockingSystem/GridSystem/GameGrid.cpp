@@ -136,12 +136,12 @@ UGridTile* AGameGrid::GetTileFromLocation(const FVector& InLocation) const
     return retval;
 }
 
-UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
+UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
 {
     UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
     const int32 layerid = GridLayers.Emplace(retval);
     retval->SetLayerID(layerid);
-    retval->LayerInitialize(this);
+    retval->LayerInitialize(this, InActiveTiles, InApplicator);
 
     if (retval->ShouldActivateAtStart())
     {
@@ -152,11 +152,11 @@ UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass)
     return retval;
 }
 
-void AGameGrid::SetActiveLayer(UGridLayer* InLayer, TArray<UGridTile*> InTileSubset)
+void AGameGrid::SetActiveLayer(UGridLayer* InLayer)
 {
-    InLayer->OnLayerActivate(InTileSubset);
+    InLayer->OnLayerActivate();
     
-    /*Call this here so that it doesnt need ot be included in the "super" call of OnLayerActivate*/
+    /*Call this here so that it doesnt need to be included in the "super" call of OnLayerActivate*/
     if (InLayer->IsLayerVisible())
     {
         InLayer->OnShowLayer();
@@ -357,7 +357,9 @@ void AGameGrid::InitializeLayers()
 {
     for (int i = 0; i < StartupLayers.Num(); i++)
     {
-        AddGridLayer(StartupLayers[i]);
+        const UGridLayer* layercdo = StartupLayers[i].GetDefaultObject();
+        const TArray<UGridTile*> defaultgridspace = layercdo->GetDefaultTileSet(this);
+        AddGridLayer(StartupLayers[i], defaultgridspace, this);
     }
 }
 
@@ -602,14 +604,14 @@ UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQue
     UFlowFieldSolutionLayer* retval = nullptr;
     const FVector endlocation = Query.EndLocation;
     UGridTile* basegoaltile = GetTileFromLocation(endlocation);
+   const UObject* applicator = Query.Owner.Get();
 
     if (basegoaltile != nullptr)
     {
-        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass()));
+        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
         retval->AddGoalTile(basegoaltile);
         SetActiveLayer(retval);
     }
-
 
     return retval;
 }

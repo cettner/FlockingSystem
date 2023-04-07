@@ -34,8 +34,8 @@ public:
 	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
 
 protected:
-	virtual void LayerInitialize(AGameGrid* InGrid) override;
-	virtual void OnLayerActivate(TArray<UGridTile*> TileSubset = TArray<UGridTile*>()) override;
+	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator) override;
+	virtual void OnLayerActivate() override;
 	virtual void OnShowLayer() override;
 	virtual void OnHideLayer() override;
 

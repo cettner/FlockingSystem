@@ -24,16 +24,22 @@ public:
 	virtual void SetLayerVisibility(bool InbIsVisible);
 	bool IsLayerVisible() const { return bIsLayerVisible; };
 
+	virtual void AddTile(UGridTile* InTile, const bool& InbShouldActivate);
+	virtual bool RemoveTile(UGridTile* InTile);
+	/*If the Grid is resp*/
+	virtual TArray<UGridTile*> GetDefaultTileSet(const AGameGrid* InGrid) const;
+
 protected:
-	virtual void LayerInitialize(AGameGrid* InGrid);
+	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile *>& InActiveTiles, AActor * InApplicator = nullptr);
 	void SetLayerID(const int32 InID) { LayerID = InID;}
 	AGameGrid* GetGameGrid() const { return ParentGrid; }
-	
+	UObject* GetApplicator() const { return Applicator;  }
+
 	template<class T>
 	T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
 
-	virtual void OnLayerActivate(TArray<UGridTile *> TileSubset = TArray<UGridTile*>());
-	virtual uint32 OnLayerDeactivate(TArray<UGridTile*> TileSubset = TArray<UGridTile*>());
+	virtual void OnLayerActivate();
+	virtual uint32 OnLayerDeactivate();
 	
 	virtual void OnShowLayer();
 	virtual void OnHideLayer();
@@ -52,11 +58,12 @@ protected:
 	bool bIsLayerVisible = false;
 
 protected:
+	TArray<UGridTile*> TileSet = TArray<UGridTile*>();
 	TArray<UGridTile*> ActiveTiles = TArray<UGridTile*>();
 
 protected:
 	AGameGrid* ParentGrid = nullptr;
-	
+	AActor * Applicator = nullptr;
 	int32 LayerID = INVALID_LAYER_ID;
 
 

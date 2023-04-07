@@ -21,6 +21,7 @@ public:
 	// Sets default values for this component's properties
 	UGridLayerComponent();
 	virtual TArray<UGridTile*> GetGridSpace() const;
+	virtual void ApplyLayers();
 
 protected:
 	virtual AGameGrid* GetGameGrid() const;
@@ -32,7 +33,6 @@ protected:
 protected:
 	virtual void PostEditComponentMove(bool bFinished) override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;
-	virtual void PostEditChangeChainProperty(FPropertyChangedChainEvent& PropertyChangedEvent) override;
 #endif
 
 

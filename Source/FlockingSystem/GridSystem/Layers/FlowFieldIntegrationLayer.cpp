@@ -51,7 +51,7 @@ bool UFlowFieldIntegrationLayer::DoesGoalExist() const
 	return retval;
 }
 
-void UFlowFieldIntegrationLayer::OnLayerActivate(TArray<UGridTile*> TileSubset)
+void UFlowFieldIntegrationLayer::OnLayerActivate()
 {
 	Super::OnLayerActivate();
 	BuildWeights();

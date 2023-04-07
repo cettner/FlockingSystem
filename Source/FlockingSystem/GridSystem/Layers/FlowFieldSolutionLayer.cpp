@@ -16,7 +16,7 @@ void UFlowFieldSolutionLayer::AddGoalTile(UGridTile* InTile, const bool bRebuild
 	if(bRebuildWeights == true)
 	{
 		IntegrationLayer->RebuildWeights();
-		VectorLayer->OnLayerActivate(ActiveTiles);
+		VectorLayer->OnLayerActivate();
 	}
 
 }
@@ -28,7 +28,7 @@ void UFlowFieldSolutionLayer::AddGoalTile(TArray<UGridTile*> InTiles, const bool
 	if (bRebuildWeights == true)
 	{
 		IntegrationLayer->RebuildWeights();
-		VectorLayer->OnLayerActivate(ActiveTiles);
+		VectorLayer->OnLayerActivate();
 	}
 }
 
@@ -49,7 +49,7 @@ bool UFlowFieldSolutionLayer::BuildSolution()
 	bool retval = true;
 	if(RequiresCostRebuild())
 	{
-		CostLayer->OnLayerActivate(ActiveTiles);
+		CostLayer->OnLayerActivate();
 		bNeedsWeightRebuild = true;
 		bNeedsCostRebuild = false;
 	}
@@ -58,9 +58,9 @@ bool UFlowFieldSolutionLayer::BuildSolution()
 	const bool brebuildweight = RequiresWeightRebuild();
 	if (brebuildweight && bhasgoal)
 	{
-		IntegrationLayer->OnLayerActivate(ActiveTiles);
+		IntegrationLayer->OnLayerActivate();
 		bNeedsWeightRebuild = false;
-		VectorLayer->OnLayerActivate(ActiveTiles);
+		VectorLayer->OnLayerActivate();
 	}
 	else
 	{
@@ -95,26 +95,26 @@ bool UFlowFieldSolutionLayer::GetFlowVectorForTile(const UGridTile* InTile, FVec
 	return VectorLayer->GetTileVector(InTile, OutTile);
 }
 
-void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid)
+void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
 {
-	Super::LayerInitialize(InGrid);
+	Super::LayerInitialize(InGrid, InActiveTiles, InApplicator);
 
 	CostLayer = NewObject<UFlowFieldCostLayer>(InGrid, UFlowFieldCostLayer::StaticClass());
 	CostLayer->SetLayerID(LayerID);
-	CostLayer->LayerInitialize(InGrid);
+	CostLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
 
 	IntegrationLayer = NewObject<UFlowFieldIntegrationLayer>(InGrid, UFlowFieldIntegrationLayer::StaticClass());
 	IntegrationLayer->SetLayerID(LayerID);
 	IntegrationLayer->SetCostLayer(CostLayer);
-	IntegrationLayer->LayerInitialize(InGrid);
+	IntegrationLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
 
 	VectorLayer = NewObject<UFlowFieldVectorLayer>(InGrid, UFlowFieldVectorLayer::StaticClass());
 	VectorLayer->SetLayerID(LayerID);
 	VectorLayer->SetIntegrationLayer(IntegrationLayer);
-	VectorLayer->LayerInitialize(InGrid);
+	VectorLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
 }
 
-void UFlowFieldSolutionLayer::OnLayerActivate(TArray<UGridTile*> TileSubset)
+void UFlowFieldSolutionLayer::OnLayerActivate()
 {
 	BuildSolution();
 }

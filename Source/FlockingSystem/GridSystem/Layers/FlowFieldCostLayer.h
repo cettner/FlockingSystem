@@ -23,7 +23,6 @@ public:
 	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;
 
 protected:
-	virtual void LayerInitialize(AGameGrid* InGrid) override;
 	virtual void PostActivateTile(UGridTile* InTile) override;
 	virtual void ShowTile(UGridTile* InTile) override;
 	virtual void HideTile(UGridTile* InTile) override;
