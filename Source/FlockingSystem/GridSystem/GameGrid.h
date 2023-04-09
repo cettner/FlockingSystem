@@ -87,7 +87,8 @@ public:
 	}
 
 public:
-	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator = nullptr);
+	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator = nullptr, const bool InbDelayActivation = false);
+	virtual void FinishLayerActivation(UGridLayer * InLayer);
 	virtual void SetActiveLayer(UGridLayer* InLayer);
 
 protected:

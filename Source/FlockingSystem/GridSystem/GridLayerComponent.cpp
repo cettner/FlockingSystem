@@ -26,6 +26,7 @@ void UGridLayerComponent::ApplyLayers()
 		if (LayerClasses[i] != nullptr)
 		{
 			UGridLayer * layer = grid->AddGridLayer(LayerClasses[i], gridspace , applicator);
+			ActiveLayers.Emplace(layer);
 		}
 	}
 }
@@ -45,6 +46,11 @@ void UGridLayerComponent::OnRegister()
 {
 	Super::OnRegister();
 
+
+}
+
+void UGridLayerComponent::PostRootTileChanged()
+{
 
 }
 

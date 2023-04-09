@@ -4,10 +4,6 @@
 #include "FlowFieldSolutionLayer.h"
 #include "../GameGrid.h"
 
-UFlowFieldSolutionLayer::UFlowFieldSolutionLayer() : Super()
-{
-	bActivatesOnStartup = false;
-}
 
 void UFlowFieldSolutionLayer::AddGoalTile(UGridTile* InTile, const bool bRebuildWeights)
 {

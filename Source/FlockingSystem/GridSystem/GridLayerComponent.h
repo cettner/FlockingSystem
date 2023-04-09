@@ -30,6 +30,9 @@ protected:
 	virtual void OnRegister() override;
 
 #if WITH_EDITOR
+public:
+	virtual void PostRootTileChanged();
+
 protected:
 	virtual void PostEditComponentMove(bool bFinished) override;
 	virtual void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent) override;

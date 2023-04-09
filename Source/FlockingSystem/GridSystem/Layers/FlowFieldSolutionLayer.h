@@ -19,8 +19,6 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 {
 	GENERATED_BODY()
 
-	UFlowFieldSolutionLayer();
-
 public:
 	void AddGoalTile(UGridTile* InTile, const bool bRebuildWeights = false);
 	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);

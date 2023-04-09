@@ -6,11 +6,6 @@
 
 #include "DrawDebugHelpers.h"
 
-UFlowFieldVectorLayer::UFlowFieldVectorLayer()
-{
-	bActivatesOnStartup = false;
-}
-
 void UFlowFieldVectorLayer::PostActivateTile(UGridTile* InTile)
 {
 	const UFlowFieldIntegrationLayer* integrationlayer = GetIntegrationLayer();

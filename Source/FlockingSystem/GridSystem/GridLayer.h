@@ -20,11 +20,10 @@ class FLOCKINGSYSTEM_API UGridLayer : public UObject
 
 public:
 	int32 GetLayerID() const { return LayerID; }
-	bool ShouldActivateAtStart() const { return bActivatesOnStartup;  }
 	virtual void SetLayerVisibility(bool InbIsVisible);
 	bool IsLayerVisible() const { return bIsLayerVisible; };
-
-	virtual void AddTile(UGridTile* InTile, const bool& InbShouldActivate);
+	bool IsLayerActivated() const { return bIsLayerActivated; }
+	virtual void AddTile(UGridTile* InTile);
 	virtual bool RemoveTile(UGridTile* InTile);
 	/*If the Grid is resp*/
 	virtual TArray<UGridTile*> GetDefaultTileSet(const AGameGrid* InGrid) const;
@@ -52,19 +51,15 @@ protected:
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
-	bool bActivatesOnStartup = true;
-
-	UPROPERTY(EditDefaultsOnly)
 	bool bIsLayerVisible = false;
 
 protected:
-	TArray<UGridTile*> TileSet = TArray<UGridTile*>();
 	TArray<UGridTile*> ActiveTiles = TArray<UGridTile*>();
 
 protected:
 	AGameGrid* ParentGrid = nullptr;
 	AActor * Applicator = nullptr;
 	int32 LayerID = INVALID_LAYER_ID;
-
+	bool bIsLayerActivated = false;
 
 };

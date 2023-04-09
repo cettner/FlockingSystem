@@ -4,10 +4,7 @@
 #include "FlowFieldIntegrationLayer.h"
 #include "../GameGrid.h"
 
-UFlowFieldIntegrationLayer::UFlowFieldIntegrationLayer()
-{
-	bActivatesOnStartup = false;
-}
+
 
 bool UFlowFieldIntegrationLayer::GetTileWeight(const UGridTile* InTile, float& OutCost) const
 {

@@ -13,6 +13,7 @@ void UGridLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& In
 
 void UGridLayer::OnLayerActivate()
 {
+
 	for (int i = 0; i < ActiveTiles.Num(); i++)
 	{
 		PostActivateTile(ActiveTiles[i]);
@@ -71,15 +72,19 @@ void UGridLayer::SetLayerVisibility(bool InbIsVisible)
 	}
 }
 
-void UGridLayer::AddTile(UGridTile* InTile, const bool& InbShouldActivate)
+void UGridLayer::AddTile(UGridTile* InTile)
 {
-	int32 isunique = TileSet.AddUnique(InTile);
-
-	if ((isunique > INDEX_NONE) && InbShouldActivate)
+	const int32 index = ActiveTiles.AddUnique(InTile);
+	if(index == INDEX_NONE)
 	{
-		ActiveTiles.Emplace(InTile);
+		UE_LOG(LogTemp, Warning, TEXT("Warning: Duplicate GridTile Added to LayerSet of %s"), *GetName())
+	}
+	else
+	{
 		PostActivateTile(InTile);
 	}
+
+
 }
 
 bool UGridLayer::RemoveTile(UGridTile* InTile)
@@ -90,8 +95,6 @@ bool UGridLayer::RemoveTile(UGridTile* InTile)
 	{
 		PostDeactivateTile(InTile);
 	}
-
-	removesuccess += TileSet.Remove(InTile);
 	const bool retval = removesuccess > (int32)0;
 
 	return retval;

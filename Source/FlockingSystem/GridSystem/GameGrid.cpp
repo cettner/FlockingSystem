@@ -136,20 +136,28 @@ UGridTile* AGameGrid::GetTileFromLocation(const FVector& InLocation) const
     return retval;
 }
 
-UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
+UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator, const bool InbDelayActivation)
 {
     UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
     const int32 layerid = GridLayers.Emplace(retval);
     retval->SetLayerID(layerid);
     retval->LayerInitialize(this, InActiveTiles, InApplicator);
 
-    if (retval->ShouldActivateAtStart())
+    if (!InbDelayActivation)
     {
         SetActiveLayer(retval);
     }
 
-
     return retval;
+}
+
+void AGameGrid::FinishLayerActivation(UGridLayer* InLayer)
+{
+    checkf(InLayer, TEXT("AGameGrid::FinishLayerActivation, InLayer was null"))
+    if (!InLayer->IsLayerActivated())
+    {
+        SetActiveLayer(InLayer);
+    }
 }
 
 void AGameGrid::SetActiveLayer(UGridLayer* InLayer)

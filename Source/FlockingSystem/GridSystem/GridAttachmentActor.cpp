@@ -81,6 +81,20 @@ static FName Name_RelativeLocation = USceneComponent::GetRelativeLocationPropert
 static FName Name_RelativeRotation = USceneComponent::GetRelativeRotationPropertyName();
 static FName Name_RelativeScale3D = USceneComponent::GetRelativeScale3DPropertyName();
 
+void AGridAttachmentActor::PostRootTileChanged()
+{
+    TInlineComponentArray<UGridLayerComponent*> layercomps = TInlineComponentArray<UGridLayerComponent*>();
+    GetComponents<UGridLayerComponent>(layercomps);
+
+    for (int32 i = 0; i < layercomps.Num(); i++)
+    {
+        if (IsValid(layercomps[i]))
+        {
+            layercomps[i]->PostRootTileChanged();
+        }
+    }
+}
+
 void AGridAttachmentActor::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
 {
     Super::PostEditChangeProperty(PropertyChangedEvent);
@@ -96,15 +110,20 @@ void AGridAttachmentActor::PostEditChangeProperty(FPropertyChangedEvent& Propert
 
         if (IsValid(foundgrid))
         {
+            UGridTile* prevtile = GetRootTile();
             UGridTile* mytile = foundgrid->GetTileFromLocation(GetActorLocation());
 
             if (IsValid(mytile))
             {
                 SetRootTile(mytile);
             }
+
+            if (prevtile != mytile)
+            {
+                PostRootTileChanged();
+            }
         }
     }
-
 }
 
 void AGridAttachmentActor::PostEditMove(bool bFinished)
@@ -124,6 +143,11 @@ void AGridAttachmentActor::PostEditMove(bool bFinished)
             if (IsValid(mytile))
             {
                 SetRootTile(mytile);
+            }
+
+            if (prevtile != mytile)
+            {
+                PostRootTileChanged();
             }
         }
     }

@@ -19,7 +19,6 @@ class FLOCKINGSYSTEM_API UFlowFieldIntegrationLayer : public UGridLayer
 	friend class UFlowFieldSolutionLayer;
 
 protected:
-	UFlowFieldIntegrationLayer();
 
 public:
 	bool GetTileWeight(const UGridTile * InTile, float& OutCost) const;

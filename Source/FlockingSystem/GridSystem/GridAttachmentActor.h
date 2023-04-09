@@ -39,14 +39,12 @@ protected:
 protected:
 	UGridTile * RootTile = nullptr;
 
-
-
-
 #ifdef WITH_EDITOR
 protected:
+	virtual void PostRootTileChanged();
+
+protected:
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
-	
-	/** Called after an actor has been moved in the editor */
 	virtual void PostEditMove(bool bFinished) override;
 #endif
 };

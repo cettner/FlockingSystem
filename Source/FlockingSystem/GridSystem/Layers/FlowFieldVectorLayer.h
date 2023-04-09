@@ -18,9 +18,6 @@ class FLOCKINGSYSTEM_API UFlowFieldVectorLayer : public UGridLayer
 
 	friend class UFlowFieldSolutionLayer;
 
-public:
-	UFlowFieldVectorLayer();
-
 protected:
 	virtual void PostActivateTile(UGridTile* InTile) override;
 	virtual void ShowTile(UGridTile* InTile) override;
