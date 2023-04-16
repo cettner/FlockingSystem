@@ -20,14 +20,18 @@ class FLOCKINGSYSTEM_API UGridLayerComponent : public UBoxComponent
 public:	
 	// Sets default values for this component's properties
 	UGridLayerComponent();
-	virtual TArray<UGridTile*> GetGridSpace() const;
+	virtual TSet<UGridTile*> GetGridSpace() const;
 	virtual void ApplyLayers();
 
 protected:
 	virtual AGameGrid* GetGameGrid() const;
 
 protected:
+	virtual void InitializeComponent() override;
 	virtual void OnRegister() override;
+	virtual void PostLoad() override;
+	virtual void OnComponentCreated() override;
+	virtual void Activate(bool bReset = false) override;
 
 #if WITH_EDITOR
 public:

@@ -23,6 +23,7 @@ public:
 	FORCEINLINE UGridTile * GetRootTile() const{ return RootTile; }
 
 protected:
+	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
 
 protected: 

@@ -74,6 +74,14 @@ public:
 	}
 
 	template<typename T>
+	TArray<T*> GetLayersOfClass() const
+	{
+		TArray<T*> retval = TArray<T*>();
+
+		return retval;
+	}
+
+	template<typename T>
 	T * GetLayerByIndex(int32 InLayerID) const
 	{
 		if (InLayerID > INVALID_LAYER_ID && InLayerID < GridLayers.Num())
@@ -92,11 +100,11 @@ public:
 	virtual void SetActiveLayer(UGridLayer* InLayer);
 
 protected:
-	virtual void DrawGridLines(const TSet<FLine>& InGridLines);
+	virtual void DrawGridLines();
 
 	virtual void DrawGridTiles();
 
-	virtual bool BuildGridData(TSet<FLine>& OutGridLines);
+	virtual bool BuildGridData();
 
 	virtual void AddTileNeighbors();
 
@@ -119,6 +127,7 @@ protected:
 	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FPathFindingQuery& Query);
 
 protected:
+	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
 
 	virtual void BeginPlay() override;

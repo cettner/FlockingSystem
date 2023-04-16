@@ -3,15 +3,24 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/NoExportTypes.h"
+
+#include "../GridLayer.h"
 #include "ClaimSpaceLayer.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class FLOCKINGSYSTEM_API UClaimSpaceLayer : public UObject
+class FLOCKINGSYSTEM_API UClaimSpaceLayer : public UGridLayer
 {
 	GENERATED_BODY()
-	
+
+	UClaimSpaceLayer();
+
+	public:
+		bool IsClaimValid() const;
+
+	protected:
+		virtual void ShowTile(UGridTile* InTile) override;
+		virtual void HideTile(UGridTile* InTile) override;
 };

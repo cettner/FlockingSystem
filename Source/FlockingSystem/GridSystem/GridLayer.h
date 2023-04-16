@@ -25,8 +25,14 @@ public:
 	bool IsLayerActivated() const { return bIsLayerActivated; }
 	virtual void AddTile(UGridTile* InTile);
 	virtual bool RemoveTile(UGridTile* InTile);
+	FORCEINLINE bool ContainsTile(const UGridTile* InTile) const; 
+	/*Swaps out the existing tileset for the provided one, if InbShouldActivateSharedTiles is set to true, all tiles 
+	will be deativated and activated again even if they are contained in both sets*/
+	virtual int ResetTiles(const TSet<UGridTile*>& InActiveTiles, const bool &InbShouldActivateSharedTiles = true);
+
 	/*If the Grid is resp*/
 	virtual TArray<UGridTile*> GetDefaultTileSet(const AGameGrid* InGrid) const;
+
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile *>& InActiveTiles, AActor * InApplicator = nullptr);
@@ -54,7 +60,10 @@ protected:
 	bool bIsLayerVisible = false;
 
 protected:
+	/*Current TileSet, which is Duplicated in ActiveTileSet, as a result, always use AddTile and RemoveTile to change the layer*/
 	TArray<UGridTile*> ActiveTiles = TArray<UGridTile*>();
+	/*Sets cant be used for replication currently, but provide the fast access to the tileset, which should always be unique, this mirrors ActiveTiles*/
+	TSet<UGridTile*> ActiveTileSet = TSet<UGridTile*>();
 
 protected:
 	AGameGrid* ParentGrid = nullptr;

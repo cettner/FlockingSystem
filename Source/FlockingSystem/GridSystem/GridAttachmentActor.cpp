@@ -9,6 +9,7 @@
 AGridAttachmentActor::AGridAttachmentActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
+
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("RootScene"));
     DebugMeshComp = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DebugMeshComp"));
     DebugMeshComp->SetupAttachment(RootComponent);
@@ -38,10 +39,9 @@ AGameGrid * AGridAttachmentActor::GetGameGrid() const
     return retval;
 }
 
-void AGridAttachmentActor::PostInitializeComponents()
+void AGridAttachmentActor::PreInitializeComponents()
 {
-    Super::PostInitializeComponents();
-
+    Super::PreInitializeComponents();
     AGameGrid* foundgrid = FindGrid(GetWorld());
 
     if (IsValid(foundgrid))
@@ -53,6 +53,11 @@ void AGridAttachmentActor::PostInitializeComponents()
             SetRootTile(mytile);
         }
     }
+}
+
+void AGridAttachmentActor::PostInitializeComponents()
+{
+    Super::PostInitializeComponents();
 }
 
 AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)

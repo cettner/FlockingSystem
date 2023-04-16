@@ -171,8 +171,15 @@ void AGameGrid::SetActiveLayer(UGridLayer* InLayer)
     }
 }
 
-void AGameGrid::DrawGridLines(const TSet<FLine>& InGridLines)
+void AGameGrid::DrawGridLines()
 {
+    TSet<FLine> gridlines = TSet<FLine>();
+    for (int i = 0; i < GridData.Num(); i++)
+    {
+        const TSet<FLine> boundarylines = GridData[i]->GetTileBoundaryLines();
+        gridlines.Append(boundarylines);
+    }
+
     LinesProceduralMesh->ClearAllMeshSections();
     UMaterialInstanceDynamic* linematerial = UMaterialInstanceDynamic::Create(GridMaterial, this);
 
@@ -183,7 +190,7 @@ void AGameGrid::DrawGridLines(const TSet<FLine>& InGridLines)
     TArray<int> tris = TArray<int>();
     int32 sectionid = 0;
 
-    for (const FLine& Elem : InGridLines)
+    for (const FLine& Elem : gridlines)
     {
         verticies.Reset();
         tris.Reset();
@@ -232,7 +239,7 @@ void AGameGrid::DrawGridTiles()
     }
 }
 
-bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
+bool AGameGrid::BuildGridData()
 {
 	bool retval = true;
     
@@ -254,9 +261,6 @@ bool AGameGrid::BuildGridData(TSet<FLine>& OutGridLines)
                 UGridTile* newtile = NewObject<UGridTile>(this, TileClass);
                 const int32 tileid = (row * colcount) + col;
                 newtile->SetupTile(tileid, tilecenterlocation);
-
-                const TSet<FLine> boundarylines = newtile->GetTileBoundaryLines();
-                OutGridLines.Append(boundarylines);
 
                 GridData.Emplace(newtile);
             }
@@ -371,15 +375,20 @@ void AGameGrid::InitializeLayers()
     }
 }
 
+void AGameGrid::PreInitializeComponents()
+{
+    Super::PreInitializeComponents();
+    BuildGridData();
+}
+
 void AGameGrid::PostInitializeComponents()
 {
     /*Use AActor because Navigation Datas Postinitialize is reliant on navigationsystemv1*/
 	AActor::PostInitializeComponents();
 
-    TSet<FLine> lineset = TSet<FLine>();
-    if (BuildGridData(lineset)  && IsValid(LinesProceduralMesh))
+    if (IsValid(LinesProceduralMesh))
     {
-        DrawGridLines(lineset);
+        DrawGridLines();
         DrawGridTiles();
         InitializeLayers();
     }
@@ -401,12 +410,10 @@ void AGameGrid::DrawDebugData()
 
 void AGameGrid::RebuildGridData(bool bRedrawMesh)
 {
-    TSet<FLine> lineset = TSet<FLine>();
-    BuildGridData(lineset);
-
+    BuildGridData();
     if (bRedrawMesh && IsValid(LinesProceduralMesh))
     {
-        DrawGridLines(lineset);
+        DrawGridLines();
     }
 }
 
@@ -424,9 +431,9 @@ void AGameGrid::OnConstruction(const FTransform& Transform)
             if (type >= EWorldType::Editor)
             {
                 TSet<FLine> lineset = TSet<FLine>();
-                if (BuildGridData(lineset) && IsValid(LinesProceduralMesh))
+                if (BuildGridData() && IsValid(LinesProceduralMesh))
                 {
-                    DrawGridLines(lineset);
+                    DrawGridLines();
                     bRebuildGridData = false;
                 }
             }
