@@ -42,6 +42,7 @@ AGameGrid * AGridAttachmentActor::GetGameGrid() const
 void AGridAttachmentActor::PreInitializeComponents()
 {
     Super::PreInitializeComponents();
+
     AGameGrid* foundgrid = FindGrid(GetWorld());
 
     if (IsValid(foundgrid))
@@ -58,11 +59,29 @@ void AGridAttachmentActor::PreInitializeComponents()
 void AGridAttachmentActor::PostInitializeComponents()
 {
     Super::PostInitializeComponents();
+
+     TInlineComponentArray<UGridLayerComponent*> layercomps = TInlineComponentArray<UGridLayerComponent*>();
+    GetComponents<UGridLayerComponent>(layercomps);
+
+    for (int32 i = 0; i < layercomps.Num(); i++)
+    {
+        if (IsValid(layercomps[i]))
+        {
+            layercomps[i]->ApplyLayers();
+        }
+    }
+}
+
+void AGridAttachmentActor::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+
 }
 
 AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)
 {
     AGameGrid* retval = nullptr;
+
     if (IsValid(InWorld))
     {
         for (TActorIterator<AGameGrid> ActorItr(InWorld); ActorItr; ++ActorItr)
@@ -70,9 +89,40 @@ AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)
             AGameGrid* found = *ActorItr;
 
             if (found->IsValidGridLocation(GetActorLocation()))
+               {
+                  retval = found;
+                  break;
+               }
+        }
+    }
+
+    return retval;
+}
+
+AGameGrid* AGridAttachmentActor::FindEditorGrid(UWorld* InWorld)
+{
+    AGameGrid* retval = FindGrid(InWorld);
+    if (IsValid(retval))
+    {
+        return retval;
+    }
+    else if (IsValid(InWorld) && InWorld->WorldType == EWorldType::Editor)
+    {
+        retval = FindGrid(InWorld);
+    }
+    else
+    {
+        UWorld* world = nullptr;
+        for (int i = 0; i < GEngine->GetWorldContexts().Num(); i++)
+        {
+            world = GEngine->GetWorldContexts()[i].World();
+            if (IsValid(world) && world->WorldType == EWorldType::Editor)
             {
-                retval = found;
-                break;
+                retval = FindGrid(world);
+                if (IsValid(retval))
+                {
+                    break;
+                }
             }
         }
     }
@@ -85,6 +135,32 @@ AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)
 static FName Name_RelativeLocation = USceneComponent::GetRelativeLocationPropertyName();
 static FName Name_RelativeRotation = USceneComponent::GetRelativeRotationPropertyName();
 static FName Name_RelativeScale3D = USceneComponent::GetRelativeScale3DPropertyName();
+
+void AGridAttachmentActor::OnGridConstructed(AGameGrid* InGrid)
+{
+    if (IsValid(InGrid))
+    {
+        UGridTile* mytile = InGrid->GetTileFromLocation(GetActorLocation());
+
+        if (IsValid(mytile) && (mytile != RootTile))
+        {
+            SetRootTile(mytile);
+            PostRootTileChanged();
+
+        }
+
+        TInlineComponentArray<UGridLayerComponent*> layercomps = TInlineComponentArray<UGridLayerComponent*>();
+        GetComponents<UGridLayerComponent>(layercomps);
+
+        for (int32 i = 0; i < layercomps.Num(); i++)
+        {
+            if (IsValid(layercomps[i]))
+            {
+                layercomps[i]->ApplyLayers();
+            }
+        }
+    }
+}
 
 void AGridAttachmentActor::PostRootTileChanged()
 {

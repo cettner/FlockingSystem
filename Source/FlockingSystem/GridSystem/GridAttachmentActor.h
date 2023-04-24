@@ -5,6 +5,10 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 
+#ifdef WITH_EDITOR
+#include "Engine/World.h"
+#endif
+
 #include "GameGrid.h"
 #include "GridLayerComponent.h"
 #include "GridAttachmentActor.generated.h"
@@ -25,10 +29,11 @@ public:
 protected:
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
+	virtual void OnConstruction(const FTransform& Transform) override;
 
 protected: 
 	AGameGrid* FindGrid(UWorld * InWorld);
-
+	AGameGrid* FindEditorGrid(UWorld* InWorld);
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -41,6 +46,9 @@ protected:
 	UGridTile * RootTile = nullptr;
 
 #ifdef WITH_EDITOR
+public:
+	virtual void OnGridConstructed(AGameGrid * InGrid);
+
 protected:
 	virtual void PostRootTileChanged();
 

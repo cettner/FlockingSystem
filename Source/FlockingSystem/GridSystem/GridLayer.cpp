@@ -57,10 +57,18 @@ void UGridLayer::OnHideLayer()
 
 void UGridLayer::PostActivateTile(UGridTile* InTile)
 {
+	if (IsLayerVisible())
+	{
+		ShowTile(InTile);
+	}
 }
 
 void UGridLayer::PostDeactivateTile(UGridTile* InTile)
 {
+	if (IsLayerVisible())
+	{
+		HideTile(InTile);
+	}
 }
 
 void UGridLayer::ShowTile(UGridTile* InTile)

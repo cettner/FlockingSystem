@@ -204,6 +204,8 @@ protected:
 protected:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void PostEditChangeProperty(struct FPropertyChangedEvent& PropertyChangedEvent) override;
+
+protected:
 	bool bRebuildGridData = true;
 #endif
 

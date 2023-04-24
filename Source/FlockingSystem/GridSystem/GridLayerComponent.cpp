@@ -73,7 +73,7 @@ void UGridLayerComponent::ApplyLayers()
 AGameGrid* UGridLayerComponent::GetGameGrid() const
 {
 	AGameGrid* retval = nullptr;
-	if (AGridAttachmentActor * parent = Cast<AGridAttachmentActor>(GetAttachParentActor()))
+	if (const AGridAttachmentActor * parent = Cast<AGridAttachmentActor>(GetAttachParentActor()))
 	{
 		retval = parent->GetGameGrid();
 	}
@@ -84,7 +84,7 @@ AGameGrid* UGridLayerComponent::GetGameGrid() const
 void UGridLayerComponent::InitializeComponent()
 {
 	Super::InitializeComponent();
-    ApplyLayers();
+    //ApplyLayers();
 
 }
 

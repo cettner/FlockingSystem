@@ -3,8 +3,10 @@
 
 #include "GameGrid.h"
 #include "NavigationSystem.h"
-#include "../Navigation/VectorFieldNavigationSystem.h"
+#include "EngineUtils.h"
 
+#include "../Navigation/VectorFieldNavigationSystem.h"
+#include "GridAttachmentActor.h"
 
 AGameGrid::AGameGrid() : Super()
 {
@@ -377,7 +379,7 @@ void AGameGrid::InitializeLayers()
 
 void AGameGrid::PreInitializeComponents()
 {
-    Super::PreInitializeComponents();
+    AActor::PreInitializeComponents();
     BuildGridData();
 }
 
@@ -405,66 +407,6 @@ void AGameGrid::DrawDebugData()
     for (int i = 0; i < GridData.Num(); i++)
     {
         GridData[i]->DrawDebugData();
-    }
-}
-
-void AGameGrid::RebuildGridData(bool bRedrawMesh)
-{
-    BuildGridData();
-    if (bRedrawMesh && IsValid(LinesProceduralMesh))
-    {
-        DrawGridLines();
-    }
-}
-
-void AGameGrid::OnConstruction(const FTransform& Transform)
-{
-    Super::OnConstruction(Transform);
-
-    if (bRebuildGridData == true)
-    {
-        UWorld* World = GetWorld();
-
-        if (World != nullptr)
-        {
-            EWorldType::Type type = World->WorldType;
-            if (type >= EWorldType::Editor)
-            {
-                TSet<FLine> lineset = TSet<FLine>();
-                if (BuildGridData() && IsValid(LinesProceduralMesh))
-                {
-                    DrawGridLines();
-                    bRebuildGridData = false;
-                }
-            }
-        }
-    }
-
-}
-
-void AGameGrid::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
-{
-    Super::PostEditChangeProperty(PropertyChangedEvent);
-
-    const FName PropName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : FName();
-
-    if (PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, TileEdgeLength)
-        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridLength)
-        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridWidth))
-    {
-        if (TileEdgeLength > GridLength || TileEdgeLength > GridWidth)
-        {
-            if (GridLength <= GridWidth)
-            {
-                TileEdgeLength = GridLength;
-            }
-            else
-            {
-                TileEdgeLength = GridWidth;
-            }
-        }
-
-        RebuildGridData();
     }
 }
 
@@ -533,7 +475,6 @@ void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineE
 	Verts.Append(newverticies, 4);
 	delete[] newverticies;
 }
-
 
 /*****Start Navigation ***/
 /*Equivalent of findpath*/
@@ -630,11 +571,90 @@ UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQue
 
     return retval;
 }
+/*************End Navigation****************/
 
 void AGameGrid::PostLoad()
 {
-    UObject::PostLoad();
+    AActor::PostLoad();
 
     bNetLoadOnClient = FNavigationSystem::ShouldLoadNavigationOnClient(*this);
     RequestNavigationRegistration();
 }
+
+
+#ifdef WITH_EDITOR
+void AGameGrid::RebuildGridData(bool bRedrawMesh)
+{
+    BuildGridData();
+    if (bRedrawMesh && IsValid(LinesProceduralMesh))
+    {
+        DrawGridLines();
+    }
+}
+
+void AGameGrid::OnConstruction(const FTransform& Transform)
+{
+    Super::OnConstruction(Transform);
+
+    if (bRebuildGridData == true)
+    {
+        UWorld* World = GetWorld();
+
+        if (World != nullptr)
+        {
+            EWorldType::Type type = World->WorldType;
+            if (type == EWorldType::Editor)
+            {
+                if (BuildGridData() && IsValid(LinesProceduralMesh))
+                {
+                    DrawGridLines();
+                    DrawGridTiles();
+                    bRebuildGridData = false;
+                }
+            }
+        }
+
+
+        const UWorld* world = GetWorld();
+        if (IsValid(world) && world->WorldType == EWorldType::Editor)
+        {
+            for (TActorIterator<AGridAttachmentActor> ActorItr(world); ActorItr; ++ActorItr)
+            {
+                AGridAttachmentActor* found = *ActorItr;
+                if (!IsValid(found->GetGameGrid()) || found->GetGameGrid() == this)
+                {
+                    found->OnGridConstructed(this);
+                }
+
+            }
+        }
+    }
+
+}
+
+void AGameGrid::PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent)
+{
+    Super::PostEditChangeProperty(PropertyChangedEvent);
+
+    const FName PropName = (PropertyChangedEvent.Property != nullptr) ? PropertyChangedEvent.Property->GetFName() : FName();
+
+    if (PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, TileEdgeLength)
+        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridLength)
+        || PropName == GET_MEMBER_NAME_CHECKED(AGameGrid, GridWidth))
+    {
+        if (TileEdgeLength > GridLength || TileEdgeLength > GridWidth)
+        {
+            if (GridLength <= GridWidth)
+            {
+                TileEdgeLength = GridLength;
+            }
+            else
+            {
+                TileEdgeLength = GridWidth;
+            }
+        }
+
+        RebuildGridData();
+    }
+}
+#endif
