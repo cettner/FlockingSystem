@@ -125,7 +125,8 @@ protected:
 	void RequestNavigationRegistration();
 	UFlowFieldSolutionLayer* GetSolutionFromQuery(const FPathFindingQuery& Query) const;
 	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FPathFindingQuery& Query);
-
+	virtual void RebuildAll() override;
+	/*End Navigation*/
 protected:
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;

@@ -377,6 +377,11 @@ void AGameGrid::InitializeLayers()
     }
 }
 
+void AGameGrid::RebuildAll()
+{
+    int debug = 9;
+}
+
 void AGameGrid::PreInitializeComponents()
 {
     AActor::PreInitializeComponents();

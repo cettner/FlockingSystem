@@ -21,6 +21,9 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 		FVector GetFlockAgentDirection() const override;
 
 	protected:
+		/** notify about finishing move along current path segment */
+		virtual void OnSegmentFinished() override;
+		void OnPathFinished(const FPathFollowingResult& Result) override;
 		virtual void UpdatePathSegment() override;
 		/** follow current path segment */
 		virtual void FollowPathSegment(float DeltaTime) override;

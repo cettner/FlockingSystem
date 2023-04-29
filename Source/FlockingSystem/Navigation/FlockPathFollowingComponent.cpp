@@ -32,6 +32,16 @@ FVector UFlockPathFollowingComponent::GetFlockAgentDirection() const
 	return retval;
 }
 
+void UFlockPathFollowingComponent::OnSegmentFinished()
+{
+	int debug = 9;
+}
+
+void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Result)
+{
+	Super::OnPathFinished(Result);
+}
+
 void UFlockPathFollowingComponent::UpdatePathSegment()
 {
 #if !UE_BUILD_SHIPPING
@@ -41,7 +51,7 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 	if ((Path.IsValid() == false) || (MovementComp == nullptr))
 	{
 		//UE_CVLOG(Path.IsValid() == false, this, LogPathFollowing, Log, TEXT("Aborting move due to not having a valid path object"));
-		OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
+		UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
 		return;
 	}
 
@@ -53,7 +63,7 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 		if (!Path->IsWaitingForRepath())
 		{
 			//UE_VLOG(this, LogPathFollowing, Log, TEXT("Aborting move due to path being invalid and not waiting for repath"));
-			OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
+			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
 			return;
 		}
 		else if (HasStartedNavLinkMove() && bCanUpdateState && Status == EPathFollowingStatus::Moving)
@@ -89,12 +99,12 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 		{
 			// check if collided with goal actor
 			OnSegmentFinished();
-			OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
+			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
 		}
 		else if (MoveSegmentEndIndex > PreciseAcceptanceRadiusCheckStartNodeIndex && HasReachedDestination(CurrentLocation))
 		{
 			OnSegmentFinished();
-			OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
+			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
 		}
 		else if (bFollowingLastSegment && bMoveToGoalOnLastSegment)
 		{
@@ -133,7 +143,7 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 		const bool bHasNewSample = UpdateBlockDetection();
 		if (bHasNewSample && IsBlocked())
 		{
-			OnPathFinished(EPathFollowingResult::Blocked, FPathFollowingResultFlags::None);
+			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Blocked, FPathFollowingResultFlags::None);
 		}
 	}
 }

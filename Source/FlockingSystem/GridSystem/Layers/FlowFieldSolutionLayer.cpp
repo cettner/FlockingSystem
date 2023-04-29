@@ -83,7 +83,17 @@ bool UFlowFieldSolutionLayer::IsSolutionReady() const
 
 bool UFlowFieldSolutionLayer::CanUseSolutionforQuery(const FPathFindingQuery& Query) const
 {
-	return false;
+	bool retval = false;
+	const AGameGrid * grid = GetGameGrid();
+	const FVector endlocation = Query.EndLocation;
+	const UGridTile * goaltile = grid->GetTileFromLocation(endlocation);
+
+	if (IsGoalTile(goaltile))
+	{
+		retval = true;
+	}
+
+	return retval;
 }
 
 bool UFlowFieldSolutionLayer::GetFlowVectorForTile(const UGridTile* InTile, FVector& OutTile) const
