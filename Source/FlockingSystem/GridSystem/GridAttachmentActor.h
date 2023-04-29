@@ -29,11 +29,9 @@ public:
 protected:
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
-	virtual void OnConstruction(const FTransform& Transform) override;
 
 protected: 
 	AGameGrid* FindGrid(UWorld * InWorld);
-	AGameGrid* FindEditorGrid(UWorld* InWorld);
 
 protected:
 	UPROPERTY(EditDefaultsOnly)

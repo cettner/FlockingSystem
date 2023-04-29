@@ -28,6 +28,8 @@ public:
 
 	virtual void SetGoalActor(AActor* InGoal);
 
+	virtual void SetGoalLocation(FVector InLocation);
+
 protected:
 
 	virtual bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const;

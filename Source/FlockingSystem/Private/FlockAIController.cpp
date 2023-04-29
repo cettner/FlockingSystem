@@ -116,7 +116,15 @@ void AFlockAIController::SetGoalActor(AActor* InGoal)
 {
 	if (BlackboardComp != nullptr && InGoal != nullptr)
 	{
-		BlackboardComp->SetValueAsObject("GoalObject", InGoal);
+		BlackboardComp->SetValueAsObject("GoalActor", InGoal);
+	}
+}
+
+void AFlockAIController::SetGoalLocation(FVector InLocation)
+{
+	if (BlackboardComp != nullptr)
+	{
+		BlackboardComp->SetValueAsVector("GoalLocation", InLocation);
 	}
 }
 

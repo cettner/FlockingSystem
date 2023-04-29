@@ -6,7 +6,9 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "FlockingSystemCharacter.h"
+#include "FlockAIController.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 
@@ -15,7 +17,6 @@ AFlockingSystemPlayerController::AFlockingSystemPlayerController()
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
 	CachedDestination = FVector::ZeroVector;
-	FollowTime = 0.f;
 }
 
 void AFlockingSystemPlayerController::SetupInputComponent()
@@ -47,29 +48,31 @@ void AFlockingSystemPlayerController::OnInputStarted()
 
 // Triggered every frame when the input is held down
 void AFlockingSystemPlayerController::OnSetDestinationTriggered()
-{
-	// We flag that the input is being pressed
-	FollowTime += GetWorld()->GetDeltaSeconds();
-	
+{	
 	// We look for the location in the world where the player has pressed the input
 	FHitResult Hit;
 	bool bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
 
-	// If we hit a surface, cache the location
-	if (bHitSuccessful)
+	UWorld* world = GetWorld();
+	for (TActorIterator<AFlockingSystemCharacter> ActorItr(world); ActorItr; ++ActorItr)
 	{
-		CachedDestination = Hit.Location;
+		AFlockingSystemCharacter * found = *ActorItr;
+		AFlockAIController * controller = found->GetController<AFlockAIController>();
+
+		// If we hit a surface, cache the location
+		if (bHitSuccessful)
+		{
+			controller->SetGoalLocation(Hit.Location);
+		}
+
 	}
+
+
+
 }
 
 void AFlockingSystemPlayerController::OnSetDestinationReleased()
 {
-	// If it was a short press
-	if (FollowTime <= ShortPressThreshold)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
-	}
-
-	FollowTime = 0.f;
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
 }
 

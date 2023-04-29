@@ -72,12 +72,6 @@ void AGridAttachmentActor::PostInitializeComponents()
     }
 }
 
-void AGridAttachmentActor::OnConstruction(const FTransform& Transform)
-{
-    Super::OnConstruction(Transform);
-
-}
-
 AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)
 {
     AGameGrid* retval = nullptr;
@@ -93,37 +87,6 @@ AGameGrid* AGridAttachmentActor::FindGrid(UWorld* InWorld)
                   retval = found;
                   break;
                }
-        }
-    }
-
-    return retval;
-}
-
-AGameGrid* AGridAttachmentActor::FindEditorGrid(UWorld* InWorld)
-{
-    AGameGrid* retval = FindGrid(InWorld);
-    if (IsValid(retval))
-    {
-        return retval;
-    }
-    else if (IsValid(InWorld) && InWorld->WorldType == EWorldType::Editor)
-    {
-        retval = FindGrid(InWorld);
-    }
-    else
-    {
-        UWorld* world = nullptr;
-        for (int i = 0; i < GEngine->GetWorldContexts().Num(); i++)
-        {
-            world = GEngine->GetWorldContexts()[i].World();
-            if (IsValid(world) && world->WorldType == EWorldType::Editor)
-            {
-                retval = FindGrid(world);
-                if (IsValid(retval))
-                {
-                    break;
-                }
-            }
         }
     }
 
