@@ -35,7 +35,6 @@ protected:
 
 };
 
-
 UCLASS()
 class FLOCKINGSYSTEM_API AGameGrid : public ANavigationData
 {

@@ -26,6 +26,7 @@ public:
 	virtual void AddTile(UGridTile* InTile);
 	virtual bool RemoveTile(UGridTile* InTile);
 	FORCEINLINE bool ContainsTile(const UGridTile* InTile) const; 
+	FORCEINLINE const TSet<UGridTile*>& GetTiles() const { return ActiveTileSet; }
 	/*Swaps out the existing tileset for the provided one, if InbShouldActivateSharedTiles is set to true, all tiles 
 	will be deativated and activated again even if they are contained in both sets*/
 	virtual int ResetTiles(const TSet<UGridTile*>& InActiveTiles, const bool &InbShouldActivateSharedTiles = true);

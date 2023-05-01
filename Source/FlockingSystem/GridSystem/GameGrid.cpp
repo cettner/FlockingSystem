@@ -562,9 +562,9 @@ UFlowFieldSolutionLayer* AGameGrid::GetSolutionFromQuery(const FPathFindingQuery
 
 UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQuery& Query)
 {
-    UFlowFieldSolutionLayer* retval = nullptr;
-    const FVector endlocation = Query.EndLocation;
-    UGridTile* basegoaltile = GetTileFromLocation(endlocation);
+   UFlowFieldSolutionLayer* retval = nullptr;
+   const FVector endlocation = Query.EndLocation;
+   UGridTile* basegoaltile = GetTileFromLocation(endlocation);
    const UObject* applicator = Query.Owner.Get();
 
     if (basegoaltile != nullptr)
