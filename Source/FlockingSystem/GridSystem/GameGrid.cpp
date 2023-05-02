@@ -415,12 +415,7 @@ void AGameGrid::DrawDebugData()
     }
 }
 
-int32 AGameGrid::GetNumTiles()
-{
-    return GridData.Num();
-}
-
-bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter)
+bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter) const
 {
     const FVector actorlocation = GetActorLocation();
 

@@ -36,7 +36,7 @@ public:
 	TSet<UGridLayer*> TileNeighbors = TSet<UGridLayer*>();
 };
 
-UCLASS()
+UCLASS(BluePrintable)
 class FLOCKINGSYSTEM_API USuperTileManager : public UGridLayer
 {
 	GENERATED_BODY()

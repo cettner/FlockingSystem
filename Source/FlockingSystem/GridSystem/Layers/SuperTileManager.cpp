@@ -26,6 +26,8 @@ void USuperTileManager::InitializeTileNeighbors(TArray<UGridLayer*>& InLayers)
         {
             for (int32 AdjColIndex = colindex - 1; AdjColIndex <= colindex + 1; AdjColIndex++)
             {
+
+
                 // Skip if the adjacent tile is out of bounds or if it's the current tile
                 if (AdjRowIndex < 0 || AdjRowIndex >= RowSize || AdjColIndex < 0 || AdjColIndex >= ColomnSize || (AdjRowIndex == rowindex && AdjColIndex == colindex))
                 {
@@ -62,22 +64,33 @@ void USuperTileManager::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTil
     {
         TArray<UGridLayer*> superlayers = TArray<UGridLayer*>();
 
-        // Create the super tiles
-        const int32 numrows = InGrid->GetMaxRows() / RowSize;
-        const int32 numcols = InGrid->GetMaxCols() / ColomnSize;
+        // Determine the number of full and partial super tiles in each dimension
+        const int32 numrows = InGrid->GetMaxRows();
+        const int32 numcols = InGrid->GetMaxCols();
+        const int32 rowremainder = numrows % RowSize;
+        const int32 colremainder = numcols % ColomnSize;
+        const int32 numfullrows = numrows / RowSize;
+        const int32 numfullcols = numcols / ColomnSize;
+        const int32 numpartialrows = rowremainder > 0 ? 1 : 0;
+        const int32 numpartialcols = colremainder > 0 ? 1 : 0;
 
-        for (int32 rowindex = 0; rowindex < numrows; rowindex++)
+        // Loop through all the super tiles and create them, handling partial super tiles as needed
+        for (int32 rowindex = 0; rowindex < numfullrows + numpartialrows; rowindex++)
         {
-            for (int32 colindex = 0; colindex < numcols; colindex++)
+            const int32 numrowsintile = (rowindex < numfullrows) ? RowSize : rowremainder;
+            for (int32 colindex = 0; colindex < numfullcols + numpartialcols; colindex++)
             {
+                const int32 numcolsintile = (colindex < numfullcols) ? ColomnSize : colremainder;
                 TSet<UGridTile*> subsettiles;
-                for (int32 subrowindex = 0; subrowindex < RowSize; subrowindex++)
+
+                // Add all the tiles within the current super tile
+                for (int32 subrowindex = 0; subrowindex < numrowsintile; subrowindex++)
                 {
-                    for (int32 subcolindex = 0; subcolindex < ColomnSize; subcolindex++)
+                    for (int32 subcolindex = 0; subcolindex < numcolsintile; subcolindex++)
                     {
                         const int32 globalrowindex = rowindex * RowSize + subrowindex;
                         const int32 globalcolindex = colindex * ColomnSize + subcolindex;
-                        const int32 tileindex = globalrowindex * InGrid->GetMaxCols() + globalcolindex;
+                        const int32 tileindex = globalrowindex * numcols + globalcolindex;
                         if (tileindex < InActiveTiles.Num())
                         {
                             subsettiles.Add(InActiveTiles[tileindex]);
@@ -85,6 +98,7 @@ void USuperTileManager::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTil
                     }
                 }
 
+                // Create the super tile
                 UGridLayer* newsupertile = InGrid->AddGridLayer(LayerClass, subsettiles.Array(), InApplicator);
                 checkf(newsupertile, TEXT("USuperTileManager::LayerInitialize Failed to create supertile"));
                 superlayers.Emplace(newsupertile);

@@ -77,6 +77,14 @@ public:
 	{
 		TArray<T*> retval = TArray<T*>();
 
+		for (int i = 0; i < GridLayers.Num(); i++)
+		{
+			if (T* layer = Cast<T>(this->GridLayers[i]))
+			{
+				retval.Emplace(layer);
+			}
+		}
+
 		return retval;
 	}
 
@@ -100,18 +108,11 @@ public:
 
 protected:
 	virtual void DrawGridLines();
-
 	virtual void DrawGridTiles();
-
 	virtual bool BuildGridData();
-
 	virtual void AddTileNeighbors();
-
 	virtual void InitializeLayers();
-
-	virtual int32 GetNumTiles();
-
-	virtual bool DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter);
+	virtual bool DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter) const;
 
 protected:
 	virtual void BuildLineRenderData(const FVector LineStart, const FVector LineEnd, const float LineThickness, TArray<FVector>& Verts, TArray<int>& Tris);
@@ -129,9 +130,7 @@ protected:
 protected:
 	virtual void PreInitializeComponents() override;
 	virtual void PostInitializeComponents() override;
-
 	virtual void BeginPlay() override;
-
 	virtual void PostLoad() override;
 
 protected:

@@ -116,7 +116,6 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 			openlist.Enqueue(goaltile);
 		}
 
-		UFlowFieldCostLayer* costfield = GetCostField();
 		UGridTile* roottile;
 		/*While Tiles need to be explored, get the one at the front of the list*/
 		while (openlist.Dequeue(roottile))
@@ -135,7 +134,7 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 				/*Security Checking, make sure that the tiles being aquired are valid and costs have been computed  correctly*/
 				const bool rootweightsuccess = GetTileWeight(roottile, rootweight);
 				const bool neighborweightsuccess = GetTileWeight(neighbor, neighborweight);
-				const bool neighborcostsuccess = costfield->GetTileCost(neighbor, neighborcost);
+				const bool neighborcostsuccess = GetTileCost(neighbor, neighborcost);
 				const bool tilecheck = neighborweightsuccess && rootweightsuccess && neighborcostsuccess;
 
 				neighborcostfloat = static_cast<float>(neighborcost);
@@ -169,12 +168,22 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 	}
 }
 
-UFlowFieldCostLayer* UFlowFieldIntegrationLayer::GetCostField() const
+void UFlowFieldIntegrationLayer::SetCostData(const TMap<UGridTile*, uint8>& InCostMap)
 {
-	return CostField;
+	CostMapRef = &InCostMap;
 }
 
-void UFlowFieldIntegrationLayer::SetCostLayer(UFlowFieldCostLayer* InCostLayer)
+bool UFlowFieldIntegrationLayer::GetTileCost(const UGridTile* InTile, uint8& OutCost) const
 {
-	CostField = InCostLayer;
+	checkf(CostMapRef, TEXT("UFlowFieldIntegrationLayer::GetTileCost CostMapRef was null"))
+	bool retval = false;
+	
+	const uint8* costptr = CostMapRef->Find(InTile);
+	if (costptr != nullptr)
+	{
+		OutCost = *costptr;
+		retval = true;
+	}
+
+	return retval;
 }

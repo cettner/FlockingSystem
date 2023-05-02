@@ -45,13 +45,6 @@ bool UFlowFieldSolutionLayer::IsGoalTile(const UGridTile* InGridTile) const
 bool UFlowFieldSolutionLayer::BuildSolution()
 {
 	bool retval = true;
-	if(RequiresCostRebuild())
-	{
-		CostLayer->OnLayerActivate();
-		bNeedsWeightRebuild = true;
-		bNeedsCostRebuild = false;
-	}
-
 	const bool bhasgoal = HasGoal();
 	const bool brebuildweight = RequiresWeightRebuild();
 	if (brebuildweight && bhasgoal)
@@ -107,13 +100,11 @@ void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UG
 {
 	Super::LayerInitialize(InGrid, InActiveTiles, InApplicator);
 
-	CostLayer = NewObject<UFlowFieldCostLayer>(InGrid, UFlowFieldCostLayer::StaticClass());
-	CostLayer->SetLayerID(LayerID);
-	CostLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
+	bNeedsCostRebuild = !InitializeCostData();
 
 	IntegrationLayer = NewObject<UFlowFieldIntegrationLayer>(InGrid, UFlowFieldIntegrationLayer::StaticClass());
 	IntegrationLayer->SetLayerID(LayerID);
-	IntegrationLayer->SetCostLayer(CostLayer);
+	IntegrationLayer->SetCostData(CostMap);
 	IntegrationLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
 
 	VectorLayer = NewObject<UFlowFieldVectorLayer>(InGrid, UFlowFieldVectorLayer::StaticClass());
@@ -129,11 +120,11 @@ void UFlowFieldSolutionLayer::OnCostLayerRebuilt(UFlowFieldCostLayer* InRebuiltL
 bool UFlowFieldSolutionLayer::InitializeCostData()
 {
 	AGameGrid * gamegrid = GetGameGrid();
-	TArray<UFlowFieldCostLayer*> supertilemanagers = gamegrid->GetLayersOfClass<UFlowFieldCostLayer>();
+	TArray<UFlowFieldCostLayer*> costlayers = gamegrid->GetLayersOfClass<UFlowFieldCostLayer>();
 
-	for (int i = 0; i < supertilemanagers.Num(); i++)
+	for (int i = 0; i < costlayers.Num(); i++)
 	{
-		CostMap.Append(supertilemanagers[i]->GetAllCosts());
+		CostMap.Append(costlayers[i]->GetAllCosts());
 	}
 
 	return true;

@@ -39,8 +39,8 @@ public:
 protected:
 	virtual void RebuildWeights();
 	virtual void BuildWeights();
-	virtual UFlowFieldCostLayer* GetCostField() const;
-	virtual void SetCostLayer(UFlowFieldCostLayer* InCostLayer);
+	virtual void SetCostData(const TMap<UGridTile*, uint8>& InCostMap);
+	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;
 
 protected:
 	TMap<UGridTile*, float> WeightMap = TMap<UGridTile*, float>();
@@ -48,6 +48,6 @@ protected:
 
 	bool bRequiresRebuild = true;
 
-	UFlowFieldCostLayer* CostField = nullptr;
+	const TMap<UGridTile*, uint8> *  CostMapRef = nullptr;
 
 };
