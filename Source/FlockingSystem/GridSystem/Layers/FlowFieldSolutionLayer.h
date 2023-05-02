@@ -24,7 +24,6 @@ public:
 	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);
 	bool HasGoal() const;
 	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;
-	virtual bool BuildSolution();
 	virtual bool RequiresCostRebuild() const;
 	virtual bool RequiresWeightRebuild() const;
 	virtual bool IsSolutionReady() const;
@@ -32,15 +31,19 @@ public:
 	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
 
 protected:
+	virtual bool BuildSolution();
 	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator) override;
+	virtual void OnCostLayerRebuilt(UFlowFieldCostLayer * InRebuiltLayer);
+	virtual bool InitializeCostData();
 	virtual void OnLayerActivate() override;
 	virtual void OnShowLayer() override;
 	virtual void OnHideLayer() override;
 
 
 protected:
+	/*Since Cost Data Exists in SuperTiles, we reassemble the cost data here from each of them*/
 	UPROPERTY(transient)
-	UFlowFieldCostLayer* CostLayer = nullptr;
+	TMap<UGridTile*, uint8> CostMap = TMap<UGridTile*, uint8>();
 
 	UPROPERTY(transient)
 	UFlowFieldIntegrationLayer* IntegrationLayer = nullptr;

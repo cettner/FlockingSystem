@@ -36,15 +36,8 @@ protected:
 	void ZoomIn();
 	void ZoomOut();
 
-
-
-
 	USpringArmComponent* MainCameraSpringArm;
 	UCameraComponent* MainCamera;
-
-
-
-
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Input")

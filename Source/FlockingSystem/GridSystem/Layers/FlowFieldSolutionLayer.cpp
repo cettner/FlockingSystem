@@ -2,6 +2,8 @@
 
 
 #include "FlowFieldSolutionLayer.h"
+
+#include "SuperTileManager.h"
 #include "../GameGrid.h"
 
 
@@ -118,6 +120,23 @@ void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UG
 	VectorLayer->SetLayerID(LayerID);
 	VectorLayer->SetIntegrationLayer(IntegrationLayer);
 	VectorLayer->LayerInitialize(InGrid, InActiveTiles, InApplicator);
+}
+
+void UFlowFieldSolutionLayer::OnCostLayerRebuilt(UFlowFieldCostLayer* InRebuiltLayer)
+{
+}
+
+bool UFlowFieldSolutionLayer::InitializeCostData()
+{
+	AGameGrid * gamegrid = GetGameGrid();
+	TArray<UFlowFieldCostLayer*> supertilemanagers = gamegrid->GetLayersOfClass<UFlowFieldCostLayer>();
+
+	for (int i = 0; i < supertilemanagers.Num(); i++)
+	{
+		CostMap.Append(supertilemanagers[i]->GetAllCosts());
+	}
+
+	return true;
 }
 
 void UFlowFieldSolutionLayer::OnLayerActivate()

@@ -21,6 +21,7 @@ protected:
 
 public:
 	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;
+	FORCEINLINE const TMap<UGridTile*, uint8>& GetAllCosts() const { return CostMap; }
 
 protected:
 	virtual void PostActivateTile(UGridTile* InTile) override;

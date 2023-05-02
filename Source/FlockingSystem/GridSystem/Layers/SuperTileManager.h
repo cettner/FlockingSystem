@@ -43,6 +43,9 @@ class FLOCKINGSYSTEM_API USuperTileManager : public UGridLayer
 
 	USuperTileManager();
 
+public:
+	FORCEINLINE TSubclassOf<UGridLayer> GetSuperTileClass() const { return LayerClass; }
+
 protected:
 	virtual void InitializeTileNeighbors(TArray<UGridLayer*>& InLayers);
 	static 	FLinearColor GetTileHashColor(const int& InHashID);
