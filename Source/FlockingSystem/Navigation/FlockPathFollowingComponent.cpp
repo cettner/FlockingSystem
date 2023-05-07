@@ -34,7 +34,7 @@ FVector UFlockPathFollowingComponent::GetFlockAgentDirection() const
 
 void UFlockPathFollowingComponent::OnSegmentFinished()
 {
-	int debug = 9;
+	Super::OnSegmentFinished();
 }
 
 void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Result)

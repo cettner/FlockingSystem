@@ -30,6 +30,21 @@ void UFlowFieldSolutionLayer::AddGoalTile(TArray<UGridTile*> InTiles, const bool
 	}
 }
 
+void UFlowFieldSolutionLayer::SubscribeAgent(const AActor* Subscriber)
+{
+	Subscribers.Add(Subscriber);
+}
+
+void UFlowFieldSolutionLayer::UnSubscribeAgent(const AActor* UnSubScriber)
+{
+	Subscribers.Remove(UnSubScriber);
+
+	if (Subscribers.IsEmpty())
+	{
+		GetGameGrid()->RemoveGridLayer(this);
+	}
+}
+
 bool UFlowFieldSolutionLayer::HasGoal() const
 {
 	const bool retval = IntegrationLayer->DoesGoalExist();
@@ -119,15 +134,15 @@ void UFlowFieldSolutionLayer::OnCostLayerRebuilt(UFlowFieldCostLayer* InRebuiltL
 
 bool UFlowFieldSolutionLayer::InitializeCostData()
 {
-	AGameGrid * gamegrid = GetGameGrid();
-	TArray<UFlowFieldCostLayer*> costlayers = gamegrid->GetLayersOfClass<UFlowFieldCostLayer>();
+	const AGameGrid * gamegrid = GetGameGrid();
+	const TArray<UFlowFieldCostLayer*> costlayers = gamegrid->GetLayersOfClass<UFlowFieldCostLayer>();
 
 	for (int i = 0; i < costlayers.Num(); i++)
 	{
 		CostMap.Append(costlayers[i]->GetAllCosts());
 	}
 
-	return true;
+	return CostMap.Num() == ActiveTiles.Num();
 }
 
 void UFlowFieldSolutionLayer::OnLayerActivate()

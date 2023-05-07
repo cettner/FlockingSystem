@@ -476,6 +476,18 @@ void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineE
 	delete[] newverticies;
 }
 
+bool AGameGrid::RemoveGridLayer(UGridLayer* InLayerToRemove)
+{
+    bool retval = false;
+    checkf(GridLayers.Contains(InLayerToRemove), TEXT("AGameGrid::RemoveGridLayer LayerRemoved not in active set"));
+   
+    InLayerToRemove->OnLayerDeactivate();
+    
+    
+    return retval;
+}
+
+
 /*****Start Navigation ***/
 /*Equivalent of findpath*/
 FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
