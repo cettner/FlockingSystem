@@ -27,5 +27,6 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 		virtual void UpdatePathSegment() override;
 		/** follow current path segment */
 		virtual void FollowPathSegment(float DeltaTime) override;
+		virtual FAIRequestID RequestMove(const FAIMoveRequest& RequestData, FNavPathSharedPtr InPath) override;
 	
 };

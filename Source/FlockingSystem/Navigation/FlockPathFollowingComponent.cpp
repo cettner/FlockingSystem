@@ -39,7 +39,16 @@ void UFlockPathFollowingComponent::OnSegmentFinished()
 
 void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Result)
 {
+	if (Path.IsValid())
+	{
+		FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
+		AGameGrid* grid = Cast<AGameGrid>(fieldpath->GetNavigationDataUsed());
+		UFlowFieldSolutionLayer* solution = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(fieldpath->GetSolutionID());
+		solution->UnSubscribeAgent(this);
+	}
+
 	Super::OnPathFinished(Result);
+
 }
 
 void UFlockPathFollowingComponent::UpdatePathSegment()
@@ -166,14 +175,42 @@ void UFlockPathFollowingComponent::FollowPathSegment(float DeltaTime)
 	UFlowFieldSolutionLayer* solution = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(fieldpath->GetSolutionID());
 	UGridTile* currenttile = grid->GetTileFromLocation(CurrentLocation);
 	FVector outvelocityvector;
+	if (IsValid(solution))
+	{
+		if (solution->GetFlowVectorForTile(currenttile, outvelocityvector))
+		{
+			PostProcessMove.ExecuteIfBound(this, outvelocityvector);
+			MovementComp->RequestDirectMove(outvelocityvector, true);
+		}
+		else if (solution->IsGoalTile(currenttile))
+		{
+			bCollidedWithGoal = true;
+		}
+	}
+	else
+	{
+		Path.Reset();
+	}
+}
 
-	if (solution->GetFlowVectorForTile(currenttile, outvelocityvector))
+FAIRequestID UFlockPathFollowingComponent::RequestMove(const FAIMoveRequest& RequestData, FNavPathSharedPtr InPath)
+{
+	FAIRequestID retval = FAIRequestID();
+
+	FVectorFieldPath* fieldpath = InPath->CastPath<FVectorFieldPath>();
+	AGameGrid* grid = Cast<AGameGrid>(fieldpath->GetNavigationDataUsed());
+	const int32 layerid = fieldpath->GetSolutionID();
+	UFlowFieldSolutionLayer* solution = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(layerid);
+
+	if (IsValid(solution))
 	{
-		PostProcessMove.ExecuteIfBound(this, outvelocityvector);
-		MovementComp->RequestDirectMove(outvelocityvector, true);
+		solution->SubscribeAgent(this);
+		retval = Super::RequestMove(RequestData, InPath);
 	}
-	else if (solution->IsGoalTile(currenttile))
+	else
 	{
-		bCollidedWithGoal = true;
+		retval = FAIRequestID::InvalidRequest;
 	}
+
+	return retval;
 }

@@ -141,8 +141,21 @@ UGridTile* AGameGrid::GetTileFromLocation(const FVector& InLocation) const
 UGridLayer* AGameGrid::AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator, const bool InbDelayActivation)
 {
     UGridLayer * retval = NewObject<UGridLayer>(this, InLayerClass);
-    const int32 layerid = GridLayers.Emplace(retval);
-    retval->SetLayerID(layerid);
+    if (OpenLayerIndices.IsEmpty())
+    {
+        const int32 layerid = GridLayers.Emplace(retval);
+        retval->SetLayerID(layerid);
+    }
+    else
+    {
+        const int32 layerid = OpenLayerIndices[0];
+        OpenLayerIndices.RemoveAt(0);
+        checkf(GridLayers[layerid] == nullptr, TEXT("AGameGrid::AddGridLayer : Layer Insertion Overwriting Existing Layer"));
+
+        GridLayers[layerid] = retval;
+        retval->SetLayerID(layerid);
+    }
+
     retval->LayerInitialize(this, InActiveTiles, InApplicator);
 
     if (!InbDelayActivation)
@@ -479,11 +492,20 @@ void AGameGrid::BuildLineRenderData(const FVector LineStart, const FVector LineE
 bool AGameGrid::RemoveGridLayer(UGridLayer* InLayerToRemove)
 {
     bool retval = false;
-    checkf(GridLayers.Contains(InLayerToRemove), TEXT("AGameGrid::RemoveGridLayer LayerRemoved not in active set"));
-   
     InLayerToRemove->OnLayerDeactivate();
-    
-    
+    const int32 id = InLayerToRemove->GetLayerID();
+    checkf(InLayerToRemove == GridLayers[id], TEXT("AGameGrid::RemoveGridLayer LayerRemoved not in active set"));
+    if (id == GridLayers.Num() - 1)
+    {
+        GridLayers.RemoveAt(id);
+    }
+    else
+    {
+        GridLayers[id] = nullptr;
+        OpenLayerIndices.Emplace(id);
+    }
+
+    retval = InLayerToRemove->ConditionalBeginDestroy();
     return retval;
 }
 
@@ -572,7 +594,6 @@ UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQue
    UFlowFieldSolutionLayer* retval = nullptr;
    const FVector endlocation = Query.EndLocation;
    UGridTile* basegoaltile = GetTileFromLocation(endlocation);
-   const UObject* applicator = Query.Owner.Get();
 
     if (basegoaltile != nullptr)
     {

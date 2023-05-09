@@ -189,6 +189,7 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<UGridLayer*> GridLayers = TArray<UGridLayer*>();
+	TArray<int32> OpenLayerIndices = TArray<int32>();
 
 	bool bIsGridDataBuilt = false;
 

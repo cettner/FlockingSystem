@@ -22,8 +22,8 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 public:
 	void AddGoalTile(UGridTile* InTile, const bool bRebuildWeights = false);
 	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);
-	virtual void SubscribeAgent(const AActor* Subscriber);
-	virtual void UnSubscribeAgent(const AActor* UnSubScriber);
+	virtual void SubscribeAgent(const UObject * Subscriber);
+	virtual void UnSubscribeAgent(const UObject* UnSubScriber);
 
 	bool HasGoal() const;
 	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;
@@ -54,7 +54,7 @@ protected:
 	UPROPERTY(transient)
 	UFlowFieldVectorLayer* VectorLayer = nullptr;
 
-	TSet<const AActor*> Subscribers = TSet<const AActor*>();
+	TSet<const UObject*> Subscribers = TSet<const UObject*>();
 
 protected:
 	bool bNeedsCostRebuild = true;

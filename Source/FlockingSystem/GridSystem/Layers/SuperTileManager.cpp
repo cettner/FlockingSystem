@@ -11,6 +11,21 @@ USuperTileManager::USuperTileManager()
 
 void USuperTileManager::InitializeTileNeighbors(TArray<UGridLayer*>& InLayers)
 {
+    const AGameGrid* grid = GetGameGrid();
+    int numsuperrows = grid->GetMaxRows() / ColomnSize;
+    int numsupercolomns = grid->GetMaxCols() / RowSize;
+    const bool haspartialrow = (grid->GetMaxRows() % ColomnSize) > 0;
+    const bool haspartialcolomn = (grid->GetMaxCols() % RowSize) > 0;
+
+    if (haspartialrow)
+    {
+        numsuperrows++;
+    }
+    if (haspartialcolomn)
+    {
+        numsupercolomns++;
+    }
+
     // Loop through all the super tiles and assign their neighbors
     for (int32 i = 0; i < InLayers.Num(); i++)
     {
@@ -18,30 +33,31 @@ void USuperTileManager::InitializeTileNeighbors(TArray<UGridLayer*>& InLayers)
         supertile.AppliedLayer = InLayers[i];
 
         // Get the row and column indices of the super tile
-        const int32 rowindex = i / RowSize;
-        const int32 colindex = i % ColomnSize;
+        const int32 rowindex = i / numsupercolomns;
+        const int32 colindex = i % numsupercolomns;
 
-        // Loop through all adjacent super tiles
-        for (int32 AdjRowIndex = rowindex - 1; AdjRowIndex <= rowindex + 1; AdjRowIndex++)
+        // Top Neighbor
+        if (rowindex < (numsuperrows - 1))
         {
-            for (int32 AdjColIndex = colindex - 1; AdjColIndex <= colindex + 1; AdjColIndex++)
-            {
-
-
-                // Skip if the adjacent tile is out of bounds or if it's the current tile
-                if (AdjRowIndex < 0 || AdjRowIndex >= RowSize || AdjColIndex < 0 || AdjColIndex >= ColomnSize || (AdjRowIndex == rowindex && AdjColIndex == colindex))
-                {
-                    continue;
-                }
-
-                // Get the index of the adjacent super tile
-                const int32 AdjIndex = AdjRowIndex * ColomnSize + AdjColIndex;
-
-                // Add the adjacent tile as a neighbor
-                UGridLayer* AdjSuperTile = InLayers[AdjIndex];
-                supertile.TileNeighbors.Add(AdjSuperTile);
-            }
+            supertile.TileNeighbors.Emplace(InLayers[i + numsupercolomns]);
         }
+        // Check bottom neighbor
+        if (rowindex > 0)
+        {
+            supertile.TileNeighbors.Emplace(InLayers[i - numsupercolomns]);
+        }
+        // Check left neighbor
+        if (colindex > 0)
+        {
+            supertile.TileNeighbors.Emplace(InLayers[i - 1]);
+        }
+        // Check right neighbor
+        if (colindex < numsupercolomns - 1)
+        {
+            supertile.TileNeighbors.Emplace(InLayers[i + 1]);
+        }
+
+
         SuperTiles.Add(supertile);
     }
 }
@@ -105,7 +121,7 @@ void USuperTileManager::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTil
             }
         }
 
-        InitializeTileNeighbors(superlayers);
+       InitializeTileNeighbors(superlayers);
     }
 }
 

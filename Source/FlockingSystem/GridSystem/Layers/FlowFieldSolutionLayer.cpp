@@ -30,12 +30,12 @@ void UFlowFieldSolutionLayer::AddGoalTile(TArray<UGridTile*> InTiles, const bool
 	}
 }
 
-void UFlowFieldSolutionLayer::SubscribeAgent(const AActor* Subscriber)
+void UFlowFieldSolutionLayer::SubscribeAgent(const UObject * Subscriber)
 {
 	Subscribers.Add(Subscriber);
 }
 
-void UFlowFieldSolutionLayer::UnSubscribeAgent(const AActor* UnSubScriber)
+void UFlowFieldSolutionLayer::UnSubscribeAgent(const UObject* UnSubScriber)
 {
 	Subscribers.Remove(UnSubScriber);
 
