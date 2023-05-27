@@ -11,11 +11,13 @@
 /**
  * 
  */
+
+
 UCLASS()
 class FLOCKINGSYSTEM_API UFlockNavManager : public UObject
 {
 	GENERATED_BODY()
-
+/*
 	friend UFlock;
 
 public:
@@ -40,4 +42,5 @@ protected:
 
 	UPROPERTY()
 	TSet<UObject*> AllAgents;
+	*/
 };

@@ -41,26 +41,4 @@ AFlockingSystemCharacter::AFlockingSystemCharacter()
 void AFlockingSystemCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-
-	if (HasAuthority())
-	{
-		UWorld* world = GetWorld();
-		AFlockingSystemGameMode* gm = world->GetAuthGameMode<AFlockingSystemGameMode>();
-		if (gm != nullptr)
-		{
-			gm->GetFlockManager()->RegisterFlockAgent(this);
-		}
-
-	}
-}
-
-void AFlockingSystemCharacter::JoinFlock(UFlock* InFlock)
-{
-	IFlockAgentInterface::JoinFlock(InFlock);
-	AFlockAIController* aic = GetController<AFlockAIController>();
-
-	if (aic)
-	{
-		aic->SetGoalActor(Cast<AActor>(InFlock->GetFlockGoal()));
-	}
 }

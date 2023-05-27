@@ -3,6 +3,7 @@
 
 #include "FlockNavManager.h"
 
+/*
 void UFlockNavManager::RegisterFlockAgent(IFlockAgentInterface* InAgent)
 {
 	FSetElementId id = AllAgents.Add(CastChecked<UObject>(InAgent));
@@ -44,3 +45,4 @@ TSet<UObject*> UFlockNavManager::GetObstacleAgents(const UFlock* InFlock) const
 
 	return otheragents;
 }
+*/

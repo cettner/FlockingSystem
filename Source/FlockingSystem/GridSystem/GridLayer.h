@@ -33,16 +33,15 @@ public:
 
 	/*If the Grid is resp*/
 	virtual TArray<UGridTile*> GetDefaultTileSet(const AGameGrid* InGrid) const;
+	AGameGrid* GetGameGrid() const { return ParentGrid; }
 
+	template<class T>
+	T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile *>& InActiveTiles, AActor * InApplicator = nullptr);
 	void SetLayerID(const int32 InID) { LayerID = InID;}
-	AGameGrid* GetGameGrid() const { return ParentGrid; }
 	UObject* GetApplicator() const { return Applicator;  }
-
-	template<class T>
-	T* GetGameGrid() const { Cast<T>(GetGameGrid()); }
 
 	virtual void OnLayerActivate();
 	virtual uint32 OnLayerDeactivate();

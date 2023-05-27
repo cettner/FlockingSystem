@@ -24,6 +24,7 @@ public:
 	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);
 	virtual void SubscribeAgent(const UObject * Subscriber);
 	virtual void UnSubscribeAgent(const UObject* UnSubScriber);
+	FORCEINLINE virtual bool IsAgentSubscribed(const UObject* UnSubScriber) const;
 
 	bool HasGoal() const;
 	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;

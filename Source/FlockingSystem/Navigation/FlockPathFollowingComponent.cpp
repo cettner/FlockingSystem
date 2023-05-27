@@ -6,6 +6,324 @@
 
 #include "AIController.h"
 
+void UFlockPathFollowingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+{
+	if (Status == EPathFollowingStatus::Moving)
+	{
+		FVector desiredflowfieldirection;
+		if (GetCurrentFlowFieldVector(desiredflowfieldirection))
+		{
+			UpdateObstacles(desiredflowfieldirection);
+			UpdateFlock(desiredflowfieldirection);
+		}
+
+		if (IsUsingSteering())
+		{
+			UpdateMovementTiles();
+		}
+	}
+
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+}
+
+UFlowFieldSolutionLayer* UFlockPathFollowingComponent::GetFlowFieldSolution() const
+{
+	UFlowFieldSolutionLayer* retval = nullptr;
+	if (Path.IsValid())
+	{
+		const FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
+		const AGameGrid* grid = CastChecked<AGameGrid>(fieldpath->GetNavigationDataUsed());
+		retval = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(fieldpath->GetSolutionID());
+	}
+
+	return retval;
+}
+
+bool UFlockPathFollowingComponent::GetCurrentFlowFieldVector(FVector& OutVector)
+{
+	bool success = false;
+	const UFlowFieldSolutionLayer* solution = GetFlowFieldSolution();
+	if (IsValid(solution))
+	{
+		const AGameGrid* grid = solution->GetGameGrid();
+		const FVector currentlocation = MovementComp->GetActorFeetLocation();
+		const UGridTile* currenttile = grid->GetTileFromLocation(currentlocation);
+
+		if (currenttile != nullptr)
+		{
+			success = solution->GetFlowVectorForTile(currenttile, OutVector);
+		}
+	}
+
+	return success;
+}
+
+void UFlockPathFollowingComponent::SetSteeringTile(const UGridTile* InTile)
+{
+	SteeringTile = InTile;
+	if (InTile != nullptr)
+	{
+		AGameGrid* grid = InTile->GetGameGrid();
+		grid->SetTileColor(InTile->GetTileID(), FLinearColor::Blue);
+		grid->SetTileVisible(InTile->GetTileID(), true);
+	}
+
+}
+
+bool UFlockPathFollowingComponent::ShouldEnableSteering() const
+{
+	bool retval = false;
+	if (SteeringTile != nullptr)
+	{
+		retval = true;
+	}
+	else if (ScannedObstacles.bisBlocked)
+	{
+		retval = true;
+	}
+	return retval;
+}
+
+bool UFlockPathFollowingComponent::IsAngleInRange(float StartAngle, float EndAngle, float Angle) const
+{
+	// Ensure that AngleA and AngleB are normalized to the range [0, 360)
+	StartAngle = FMath::Fmod(StartAngle, 360.0f);
+	EndAngle = FMath::Fmod(EndAngle, 360.0f);
+
+	// Normalize the AngleToCheck to the range [0, 360)
+	Angle = FMath::Fmod(Angle, 360.0f);
+
+	if (StartAngle < EndAngle)
+	{
+		// Case where the range does not wrap around 360 degrees
+		if (Angle >= StartAngle && Angle <= EndAngle)
+		{
+			return true;
+		}
+	}
+	else if (StartAngle > EndAngle)
+	{
+		// Case where the range wraps around 360 degrees
+		if (Angle >= StartAngle || Angle <= EndAngle)
+		{
+			return true;
+		}
+	}
+	else
+	{
+		// Case where AngleA and AngleB are the same
+		if (Angle == StartAngle)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+void UFlockPathFollowingComponent::UpdateMovementTiles()
+{
+	if (Path.IsValid())
+	{
+		const FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
+		const AGameGrid* grid = CastChecked<AGameGrid>(fieldpath->GetNavigationDataUsed());
+
+		if (CurrentTile == nullptr)
+		{
+			CurrentTile = grid->GetTileFromLocation(GetFlockAgentLocation());
+		}
+		else
+		{
+			const UGridTile* currenttile = grid->GetTileFromLocation(GetFlockAgentLocation());
+
+			if (CurrentTile == SteeringTile)
+			{
+				SetSteeringTile(nullptr);
+			}
+
+			if (CurrentTile != currenttile)
+			{
+				PreviousTile = CurrentTile;
+				CurrentTile = currenttile;
+			}
+
+		}
+	}
+
+}
+
+void UFlockPathFollowingComponent::UpdateObstacles(const FVector DesiredDirection)
+{
+	ScannedObstacles.Reset();
+	const FObstacleTraceData obstracedata = GetObstacleTraceData();
+	const FVector agentlocation = GetFlockAgentLocation();
+	const float agentradius = GetFlockAgentRadius();
+
+
+	int32 halftracecount = obstracedata.TraceCount / 2;
+	if (obstracedata.TraceCount % 2 == 0)
+	{
+		// Even number of traces, adjust half count
+		halftracecount++;
+	}
+	const float MinOffset = -agentradius - (agentradius *.2);
+	const float MaxOffset = agentradius + (agentradius * .2);
+
+	for (int32 i = 0; i < obstracedata.TraceCount; i++)
+	{
+		const float Offset = FMath::Lerp(MinOffset, MaxOffset, static_cast<float>(i) / (obstracedata.TraceCount - 1));
+		const FVector OffsetVector = FVector::CrossProduct(DesiredDirection, FVector::UpVector).GetSafeNormal() * Offset;
+		const FVector TraceStart = agentlocation + OffsetVector;
+		const FVector TraceEnd = TraceStart + DesiredDirection * obstracedata.TraceLength;
+
+		// Perform the line trace and handle the results
+		FHitResult HitResult;
+		FCollisionQueryParams CollisionParams;
+		CollisionParams.TraceTag = "DebugMovement";
+		GetWorld()->DebugDrawTraceTag = CollisionParams.TraceTag;
+		CollisionParams.AddIgnoredActor(GetOwner<AAIController>()->GetPawn()); // Ignore the owner of this component
+
+		if (GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, obstracedata.TraceChannel, CollisionParams))
+		{
+			if (HitResult.IsValidBlockingHit())
+			{
+				const FVector collisionvector = HitResult.Location - agentlocation;
+				ScannedObstacles.bisBlocked = true;
+				ScannedObstacles.collisionscore += collisionvector;
+				ScannedObstacles.collisionscore.Normalize();
+			}
+		}
+	}
+
+	const bool shouldusesteering = ShouldEnableSteering();
+	SetUseSteering(shouldusesteering);
+}
+
+void UFlockPathFollowingComponent::UpdateFlock(const FVector DesiredDirection)
+{
+
+}
+
+void UFlockPathFollowingComponent::SetUseSteering(const bool InUseSteering)
+{
+	if (!InUseSteering && bIsUsingSteering)
+	{
+		CurrentTile = nullptr;
+		PreviousTile = nullptr;
+		SetSteeringTile(nullptr);
+	}
+	bIsUsingSteering = InUseSteering;
+}
+
+void UFlockPathFollowingComponent::ApplyObstacleSteering(FVector& OutBaseVector, const UFlowFieldSolutionLayer* InSolution)
+{
+
+	if (SteeringTile != nullptr)
+	{
+		FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
+		OutBaseVector = steerdirection;
+	}
+	// Check if there are any scanned obstacles
+	else if (ScannedObstacles.bisBlocked)
+	{
+		FVector SteerDirection = FVector::ZeroVector;
+
+
+		TArray<const UGridTile*> alternatetiles = GetAlternateTileMoves(OutBaseVector, InSolution);
+		if (alternatetiles.Num())
+		{
+			const UGridTile * chosentile = ChooseBestSteeringTile(alternatetiles, OutBaseVector);
+			SetSteeringTile(chosentile);
+			FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
+			OutBaseVector = steerdirection;
+		}
+	}
+}
+
+TArray<const UGridTile*> UFlockPathFollowingComponent::GetAlternateTileMoves(const FVector& IntendedDirection, const UFlowFieldSolutionLayer* InSolution) const
+{
+	TArray<const UGridTile*> retval = TArray<const UGridTile*>();
+	const TArray<FGridTileNeighbor> neighboringtiles = CurrentTile->GetNeighbors();
+
+	for (int i = 0; i < neighboringtiles.Num(); i++)
+	{
+		const UGridTile* neighbortile = neighboringtiles[i].NeighborTile;
+
+		if (neighbortile != PreviousTile)
+		{
+			FVector neighborflow;
+			FVector neighborcenter = neighbortile->GetTileCenter();
+			FVector toneighbor = (neighborcenter - CurrentTile->GetTileCenter()).GetSafeNormal();
+
+				const float directiondotresult = FVector::DotProduct(IntendedDirection, toneighbor);
+
+			if (directiondotresult >= 0.0f && !IntendedDirection.Equals(toneighbor, 0.0001f))
+			{
+				retval.Add(neighbortile);
+			}
+
+		}
+	}
+
+	return retval;
+}
+
+const UGridTile* UFlockPathFollowingComponent::ChooseBestSteeringTile(TArray<const UGridTile*>& InTiles, FVector& InDesiredDirection) const
+{
+	const UGridTile* BestTile = nullptr;
+	double BestScore = -FLT_MAX;
+
+	for (const UGridTile* Tile : InTiles)
+	{
+		// Calculate a score for the tile based on your desired criteria, including the DesiredDirection
+		double Score = CalculateSteeringTileScore(Tile, InDesiredDirection);
+
+		// Update the best tile if the current tile has a higher score
+		if (Score > BestScore)
+		{
+			BestTile = Tile;
+			BestScore = Score;
+		}
+	}
+
+	return BestTile;
+}
+
+const float UFlockPathFollowingComponent::CalculateSteeringTileScore(const UGridTile* Tile, const FVector& DesiredDirection) const
+{
+	const FVector TileDirection = (Tile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
+	FVector TileFlowVector;
+
+	// Calculate the dot product of the tile flow field vector and desired direction
+	const float FlowDotProduct = 0.0f;
+	
+	if (GetFlowFieldSolution()->GetFlowVectorForTile(Tile, TileFlowVector))
+	{
+		FVector::DotProduct(TileFlowVector, DesiredDirection);
+	}
+
+	// Calculate the dot product of the tile direction and desired direction
+	const float DirectionDotProduct = FVector::DotProduct(TileDirection, DesiredDirection);
+
+	const float CollisionScoreDotProduct = FVector::DotProduct(TileDirection, ScannedObstacles.collisionscore);
+
+	float PreviousMotionDotProduct = 0.0f;
+
+	if (PreviousTile != nullptr)
+	{
+		const FVector PreviousDirection = (CurrentTile->GetTileCenter() - PreviousTile->GetTileCenter()).GetSafeNormal();
+		PreviousMotionDotProduct = FVector::DotProduct(TileDirection, PreviousDirection);
+	}
+
+	// Return the sum of the dot products as the tile score
+	float retval = DirectionDotProduct + FlowDotProduct + PreviousMotionDotProduct - (CollisionScoreDotProduct * .7);
+	return retval;
+}
+
+void UFlockPathFollowingComponent::ApplyFlockSteering(FVector& InBaseVector)
+{
+}
+
 FVector UFlockPathFollowingComponent::GetFlockAgentLocation() const
 {
 	FVector retval = FVector::ZeroVector;
@@ -32,9 +350,45 @@ FVector UFlockPathFollowingComponent::GetFlockAgentDirection() const
 	return retval;
 }
 
-void UFlockPathFollowingComponent::OnSegmentFinished()
+bool UFlockPathFollowingComponent::IsFlockMember(const AActor* InActor) const
 {
-	Super::OnSegmentFinished();
+	bool retval = false;
+	if (Path.IsValid())
+	{
+		if(const APawn* pawn = Cast<APawn>(InActor))
+		{
+			const AAIController* aic = pawn->GetController<AAIController>();
+			if (IsValid(aic))
+			{
+				const FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
+				const AGameGrid* grid = Cast<AGameGrid>(fieldpath->GetNavigationDataUsed());
+				const UFlowFieldSolutionLayer* solution = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(fieldpath->GetSolutionID());
+				if (IsValid(solution))
+				{
+					retval = solution->IsAgentSubscribed(aic->GetPathFollowingComponent());
+				}
+			}
+		}
+	}
+	return retval;
+}
+
+const TSet<const UObject*> UFlockPathFollowingComponent::GetFlockAgents() const
+{
+	return TSet<const UObject*>();
+}
+
+float UFlockPathFollowingComponent::GetFlockAgentRadius() const
+{
+	float retval = 0.0f;
+	APawn* pawn = GetOwner<AAIController>()->GetPawn();
+
+	if (pawn)
+	{
+		retval = pawn->GetSimpleCollisionRadius();
+	}
+
+	return retval;
 }
 
 void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Result)
@@ -167,18 +521,19 @@ void UFlockPathFollowingComponent::FollowPathSegment(float DeltaTime)
 	const FVector CurrentLocation = MovementComp->GetActorFeetLocation();
 	const FVector CurrentTarget = GetCurrentTargetLocation();
 
-	// set to false by default, we will set set this back to true if appropriate
-	bIsDecelerating = false;
+	const UFlowFieldSolutionLayer* solution = GetFlowFieldSolution();
 
-	FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
-	AGameGrid * grid = Cast<AGameGrid>(fieldpath->GetNavigationDataUsed());
-	UFlowFieldSolutionLayer* solution = grid->GetLayerByIndex<UFlowFieldSolutionLayer>(fieldpath->GetSolutionID());
-	UGridTile* currenttile = grid->GetTileFromLocation(CurrentLocation);
-	FVector outvelocityvector;
 	if (IsValid(solution))
 	{
+		const FVectorFieldPath* fieldpath = Path->CastPath<FVectorFieldPath>();
+		const AGameGrid* grid = CastChecked<AGameGrid>(fieldpath->GetNavigationDataUsed());
+		const UGridTile* currenttile = grid->GetTileFromLocation(CurrentLocation);
+
+		FVector outvelocityvector;
+
 		if (solution->GetFlowVectorForTile(currenttile, outvelocityvector))
 		{
+			ApplyObstacleSteering(outvelocityvector, solution);
 			PostProcessMove.ExecuteIfBound(this, outvelocityvector);
 			MovementComp->RequestDirectMove(outvelocityvector, true);
 		}
@@ -206,6 +561,7 @@ FAIRequestID UFlockPathFollowingComponent::RequestMove(const FAIMoveRequest& Req
 	{
 		solution->SubscribeAgent(this);
 		retval = Super::RequestMove(RequestData, InPath);
+
 	}
 	else
 	{
@@ -213,4 +569,17 @@ FAIRequestID UFlockPathFollowingComponent::RequestMove(const FAIMoveRequest& Req
 	}
 
 	return retval;
+}
+
+void UFlockPathFollowingComponent::Reset()
+{
+	Super::Reset();
+	CurrentTile = nullptr;
+	PreviousTile = nullptr;
+	SteeringTile = nullptr;
+
+	PreviousObstacleSteeringForce = FVector::ZeroVector;
+	ScannedObstacles.Reset();
+	bIsUsingSteering = false;
+	
 }

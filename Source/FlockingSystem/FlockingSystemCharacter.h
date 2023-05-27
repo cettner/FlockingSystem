@@ -6,12 +6,10 @@
 #include "GameFramework/Character.h"
 #include "BehaviorTree/BehaviorTree.h"
 
-#include "Navigation/Interfaces/FlockAgentGoalInterface.h"
-#include "Navigation/Interfaces/FlockAgentInterface.h"
 #include "FlockingSystemCharacter.generated.h"
 
 UCLASS(Blueprintable)
-class AFlockingSystemCharacter : public ACharacter, public IFlockAgentInterface
+class AFlockingSystemCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
@@ -20,9 +18,6 @@ public:
 
 protected:
 	virtual void PostInitializeComponents() override;
-
-protected:
-	virtual void JoinFlock(UFlock* InFlock) override;
 
 public:
 	UPROPERTY(EditDefaultsOnly, Category = Behavior)

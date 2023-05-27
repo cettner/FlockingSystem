@@ -3,7 +3,7 @@
 
 #include "Flock.h"
 #include "FlockNavManager.h"
-
+/*
 void UFlock::InitFlock(TSet<IFlockAgentInterface*> InAgents, IFlockAgentGoalInterface* AgentGoal)
 {
 	if (FlockAgents.Num())
@@ -72,3 +72,4 @@ bool UFlock::GetFlockGoalLocation(FVector& OutGoalLocation) const
 
 	return retval;
 }
+*/

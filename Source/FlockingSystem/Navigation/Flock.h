@@ -15,7 +15,7 @@ UCLASS()
 class UFlock : public UObject
 {
 	GENERATED_BODY()
-
+		/*
 	public:
 		virtual void InitFlock(TSet<IFlockAgentInterface*> InAgents, IFlockAgentGoalInterface * AgentGoal = nullptr);
 		virtual void UpdateFlock();
@@ -27,7 +27,6 @@ class UFlock : public UObject
 
 		TSet<UObject*> GetFlockDynamicObstacles() const;
 
-		/*Returns the root Location of the Goal Object, if it exists*/
 		virtual bool GetFlockGoalLocation(FVector &OutGoalLocation) const;
 
 		inline const TSet<UObject*>& GetAgents() const
@@ -39,5 +38,5 @@ class UFlock : public UObject
 		TSet<UObject*> FlockAgents;
 
 		IFlockAgentGoalInterface* FlockGoal = nullptr;
-	
+	*/
 };

@@ -35,7 +35,7 @@ protected:
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
-	TEnumAsByte<ECollisionChannel> BlockTraceChannel = ECollisionChannel::ECC_WorldStatic;
+	TEnumAsByte<ECollisionChannel> BlockTraceChannel = ECollisionChannel::ECC_Visibility;
 
 	UPROPERTY(EditDefaultsOnly, Category = Setup)
 	float BlockTraceHeightOffset = 100.0f;
