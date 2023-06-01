@@ -21,7 +21,7 @@ class FLOCKINGSYSTEM_API UFlowFieldIntegrationLayer : public UGridLayer
 protected:
 
 public:
-	bool GetTileWeight(const UGridTile * InTile, float& OutCost) const;
+	FORCEINLINE bool GetTileWeight(const UGridTile * InTile, float& OutCost) const;
 	void AddGoalTile(UGridTile* InTile);
 	void AddGoalTile(TArray<UGridTile*> InTiles);
 	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTiles.Contains(InTile); };

@@ -116,6 +116,11 @@ bool UFlowFieldSolutionLayer::GetFlowVectorForTile(const UGridTile* InTile, FVec
 	return VectorLayer->GetTileVector(InTile, OutTile);
 }
 
+bool UFlowFieldSolutionLayer::GetWeightForTile(const UGridTile* InTile, float& Outweight) const
+{
+	return IntegrationLayer->GetTileWeight(InTile, Outweight);
+}
+
 void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
 {
 	Super::LayerInitialize(InGrid, InActiveTiles, InApplicator);

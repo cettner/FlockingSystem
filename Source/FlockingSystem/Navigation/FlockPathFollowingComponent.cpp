@@ -234,8 +234,12 @@ void UFlockPathFollowingComponent::ApplyObstacleSteering(FVector& OutBaseVector,
 		{
 			const UGridTile * chosentile = ChooseBestSteeringTile(alternatetiles, OutBaseVector);
 			SetSteeringTile(chosentile);
-			FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
-			OutBaseVector = steerdirection;
+			if (IsValid(SteeringTile))
+			{
+				FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
+				OutBaseVector = steerdirection;
+			}
+
 		}
 	}
 }
@@ -257,10 +261,10 @@ TArray<const UGridTile*> UFlockPathFollowingComponent::GetAlternateTileMoves(con
 
 				const float directiondotresult = FVector::DotProduct(IntendedDirection, toneighbor);
 
-			if (directiondotresult >= 0.0f && !IntendedDirection.Equals(toneighbor, 0.0001f))
-			{
+			//if (directiondotresult >= 0.0f && !IntendedDirection.Equals(toneighbor, 0.0001f))
+			//{
 				retval.Add(neighbortile);
-			}
+			//}
 
 		}
 	}
@@ -281,8 +285,27 @@ const UGridTile* UFlockPathFollowingComponent::ChooseBestSteeringTile(TArray<con
 		// Update the best tile if the current tile has a higher score
 		if (Score > BestScore)
 		{
-			BestTile = Tile;
-			BestScore = Score;
+			// Perform the line trace and handle the results
+			const FObstacleTraceData obstracedata = GetObstacleTraceData();
+			FHitResult HitResult;
+			FCollisionQueryParams CollisionParams;
+			CollisionParams.TraceTag = "DebugMovement";
+			GetWorld()->DebugDrawTraceTag = CollisionParams.TraceTag;
+			CollisionParams.AddIgnoredActor(GetOwner<AAIController>()->GetPawn()); // Ignore the owner of this component
+			
+			const FVector TraceStart = GetFlockAgentLocation();
+			FVector tilecenter = Tile->GetTileCenter();
+			tilecenter.Z = TraceStart.Z;
+			const FVector TraceDirection = (tilecenter - TraceStart).GetSafeNormal();
+			const FVector TraceEnd = TraceStart + (TraceDirection * obstracedata.TraceLength);
+			GetWorld()->LineTraceSingleByChannel(HitResult, TraceStart, TraceEnd, obstracedata.TraceChannel, CollisionParams);
+			
+			if (!HitResult.bBlockingHit)
+			{
+				BestTile = Tile;
+				BestScore = Score;
+			}
+
 		}
 	}
 
@@ -292,15 +315,24 @@ const UGridTile* UFlockPathFollowingComponent::ChooseBestSteeringTile(TArray<con
 const float UFlockPathFollowingComponent::CalculateSteeringTileScore(const UGridTile* Tile, const FVector& DesiredDirection) const
 {
 	const FVector TileDirection = (Tile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
-	FVector TileFlowVector;
 
 	// Calculate the dot product of the tile flow field vector and desired direction
-	const float FlowDotProduct = 0.0f;
 	
-	if (GetFlowFieldSolution()->GetFlowVectorForTile(Tile, TileFlowVector))
+	float tileweightscore = 0.0f;
+	float currentweight = 0.0f;
+	float otherweight = 0.0f;
+
+	if (GetFlowFieldSolution()->GetWeightForTile(Tile, otherweight)  && GetFlowFieldSolution()->GetWeightForTile(Tile, currentweight))
 	{
-		FVector::DotProduct(TileFlowVector, DesiredDirection);
-	}
+		if (otherweight <= currentweight)
+		{
+			tileweightscore = 1.0f;
+		}
+		else
+		{
+			tileweightscore = currentweight / otherweight;
+		}
+	} 
 
 	// Calculate the dot product of the tile direction and desired direction
 	const float DirectionDotProduct = FVector::DotProduct(TileDirection, DesiredDirection);
@@ -314,9 +346,14 @@ const float UFlockPathFollowingComponent::CalculateSteeringTileScore(const UGrid
 		const FVector PreviousDirection = (CurrentTile->GetTileCenter() - PreviousTile->GetTileCenter()).GetSafeNormal();
 		PreviousMotionDotProduct = FVector::DotProduct(TileDirection, PreviousDirection);
 	}
+	else
+	{
+		const FVector PreviousDirection = GetFlockAgentDirection();
+		PreviousMotionDotProduct = FVector::DotProduct(TileDirection, PreviousDirection);
+	}
 
 	// Return the sum of the dot products as the tile score
-	float retval = DirectionDotProduct + FlowDotProduct + PreviousMotionDotProduct - (CollisionScoreDotProduct * .7);
+	float retval = (DirectionDotProduct * .8) + tileweightscore + PreviousMotionDotProduct - (CollisionScoreDotProduct * .7);
 	return retval;
 }
 
