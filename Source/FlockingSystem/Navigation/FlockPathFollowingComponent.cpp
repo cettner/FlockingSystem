@@ -252,21 +252,7 @@ TArray<const UGridTile*> UFlockPathFollowingComponent::GetAlternateTileMoves(con
 	for (int i = 0; i < neighboringtiles.Num(); i++)
 	{
 		const UGridTile* neighbortile = neighboringtiles[i].NeighborTile;
-
-		if (neighbortile != PreviousTile)
-		{
-			FVector neighborflow;
-			FVector neighborcenter = neighbortile->GetTileCenter();
-			FVector toneighbor = (neighborcenter - CurrentTile->GetTileCenter()).GetSafeNormal();
-
-				const float directiondotresult = FVector::DotProduct(IntendedDirection, toneighbor);
-
-			//if (directiondotresult >= 0.0f && !IntendedDirection.Equals(toneighbor, 0.0001f))
-			//{
-				retval.Add(neighbortile);
-			//}
-
-		}
+		retval.Add(neighbortile);
 	}
 
 	return retval;
@@ -352,8 +338,8 @@ const float UFlockPathFollowingComponent::CalculateSteeringTileScore(const UGrid
 		PreviousMotionDotProduct = FVector::DotProduct(TileDirection, PreviousDirection);
 	}
 
-	// Return the sum of the dot products as the tile score
-	float retval = (DirectionDotProduct * .8) + tileweightscore + PreviousMotionDotProduct - (CollisionScoreDotProduct * .7);
+	// Return the sum of the dot products as the tile score with weighted biasing
+	float retval = (DirectionDotProduct *  .8) + (tileweightscore *.8) + PreviousMotionDotProduct - (CollisionScoreDotProduct * .7);
 	return retval;
 }
 
