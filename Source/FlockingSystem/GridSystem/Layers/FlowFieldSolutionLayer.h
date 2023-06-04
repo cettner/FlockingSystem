@@ -34,6 +34,7 @@ public:
 	virtual bool CanUseSolutionforQuery(const FPathFindingQuery& Query) const;
 	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
 	FORCEINLINE bool GetWeightForTile(const UGridTile* InTile, float& Outweight) const;
+	FORCEINLINE const TSet<UGridTile*>& GetGoalTiles() const;
 
 protected:
 	virtual bool BuildSolution();

@@ -16,7 +16,6 @@ AFlockingSystemPlayerController::AFlockingSystemPlayerController()
 {
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::Default;
-	CachedDestination = FVector::ZeroVector;
 }
 
 void AFlockingSystemPlayerController::SetupInputComponent()
@@ -38,12 +37,14 @@ void AFlockingSystemPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Triggered, this, &AFlockingSystemPlayerController::OnSetDestinationTriggered);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AFlockingSystemPlayerController::OnSetDestinationReleased);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AFlockingSystemPlayerController::OnSetDestinationReleased);
+
+		EnhancedInputComponent->BindAction(MoveOtherClassClickAction, ETriggerEvent::Triggered, this, &AFlockingSystemPlayerController::OnMoveOtherClassTriggered);
 	}
 }
 
 void AFlockingSystemPlayerController::OnInputStarted()
 {
-	StopMovement();
+	//StopMovement();
 }
 
 // Triggered every frame when the input is held down
@@ -51,28 +52,62 @@ void AFlockingSystemPlayerController::OnSetDestinationTriggered()
 {	
 	// We look for the location in the world where the player has pressed the input
 	FHitResult Hit;
-	bool bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_Visibility, true, Hit);
+	bool bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_WorldDynamic, true, Hit);
 
 	UWorld* world = GetWorld();
 	for (TActorIterator<AFlockingSystemCharacter> ActorItr(world); ActorItr; ++ActorItr)
 	{
 		AFlockingSystemCharacter * found = *ActorItr;
-		AFlockAIController * controller = found->GetController<AFlockAIController>();
 
-		// If we hit a surface, cache the location
-		if (bHitSuccessful)
+		if (found->ActorHasTag("Left") && bHitSuccessful)
 		{
-			controller->SetGoalLocation(Hit.Location);
+			AFlockAIController* controller = found->GetController<AFlockAIController>();
+
+			if (APawn* pawn = Cast<APawn>(Hit.GetActor()))
+			{
+				controller->SetGoalActor(pawn);
+			}
+			else
+			{
+				controller->SetGoalLocation(Hit.Location);
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, Hit.Location, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
 		}
-
 	}
-
-
-
 }
 
 void AFlockingSystemPlayerController::OnSetDestinationReleased()
 {
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, CachedDestination, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
+
+}
+
+void AFlockingSystemPlayerController::OnMoveOtherClassTriggered()
+{
+	// We look for the location in the world where the player has pressed the input
+	FHitResult Hit;
+	bool bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_WorldDynamic, true, Hit);
+
+	UWorld* world = GetWorld();
+	for (TActorIterator<AFlockingSystemCharacter> ActorItr(world); ActorItr; ++ActorItr)
+	{
+		AFlockingSystemCharacter* found = *ActorItr;
+
+		if (found->ActorHasTag("Right") && bHitSuccessful)
+		{
+			AFlockAIController* controller = found->GetController<AFlockAIController>();
+
+			if (APawn* pawn = Cast<APawn>(Hit.GetActor()))
+			{
+				controller->SetGoalActor(pawn);
+			}
+			else
+			{
+				controller->SetGoalLocation(Hit.Location);
+			}
+
+			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, Hit.Location, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
+		}
+	}
 }
 

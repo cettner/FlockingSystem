@@ -27,7 +27,7 @@ public:
 	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTiles.Contains(InTile); };
 	bool RemoveGoalTile(UGridTile * InTile, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
 	bool RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
-
+	FORCEINLINE const TSet<UGridTile*>& GetGoalTiles() const { return GoalTiles; }
 	bool DoesGoalExist() const;
 
 public:

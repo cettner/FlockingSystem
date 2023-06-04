@@ -16,10 +16,15 @@ struct FObstacleScan
 	GENERATED_USTRUCT_BODY()
 public:
 	FVector collisionscore = FVector::ZeroVector;
+	//if a dynamic obstacle is blocking the anvigation path
 	bool bisBlocked = false;
+	//if true, the actor scanned is the goal or is on top of on the goal tile,
+	bool bblockedgoal = false;
+
 	void Reset() 
 	{
 		bisBlocked = false;
+		bblockedgoal = false;
 		collisionscore = FVector::ZeroVector;
 	}
 
@@ -32,14 +37,10 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 	GENERATED_BODY()
 		
 	protected:
-
-
-	protected:
 		FORCEINLINE UFlowFieldSolutionLayer* GetFlowFieldSolution() const;
 		FORCEINLINE bool GetCurrentFlowFieldVector(FVector& OutVector);
 		FORCEINLINE bool IsUsingSteering() const { return bIsUsingSteering; }
 		FORCEINLINE void SetSteeringTile(const UGridTile* InTile);
-		bool IsAngleInRange(float StartAngle, float EndAngle, float Angle) const;
 		virtual bool ShouldEnableSteering() const;
 		virtual void UpdateMovementTiles();
 		virtual void UpdateObstacles(const FVector DesiredDirection);
@@ -48,9 +49,11 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 		virtual void SetUseSteering(const bool InUseSteering);
 		virtual void ApplyObstacleSteering(FVector& InBaseVector, const UFlowFieldSolutionLayer* InSolution);
 		virtual TArray<const UGridTile*> GetAlternateTileMoves(const FVector& IntendedDirection, const UFlowFieldSolutionLayer* InSolution) const;
-		virtual const UGridTile* ChooseBestSteeringTile(TArray<const UGridTile*>& InTiles, FVector& InDesiredDirection) const;
+		virtual const UGridTile* ChooseBestSteeringTile(TArray<const UGridTile*>& InTiles,const FVector& InDesiredDirection) const;
 		virtual const float CalculateSteeringTileScore(const UGridTile* Tile, const FVector& DesiredDirection) const;
 		virtual void ApplyFlockSteering(FVector& InBaseVector);
+		//Returns the number of adjectent actors the provided actor is touching in distance to the goal, 0 is at the goal and NOT_AT_GOAL for the actor has no relation to the goal.
+		virtual bool IsActorAtGoal(const AActor* InActor) const;
 
 	protected:
 		virtual void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -70,6 +73,7 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 		virtual void FollowPathSegment(float DeltaTime) override;
 		virtual FAIRequestID RequestMove(const FAIMoveRequest& RequestData, FNavPathSharedPtr InPath) override;
 		virtual void Reset() override;
+		virtual void OnActorBump(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit) override;
 	
 
 

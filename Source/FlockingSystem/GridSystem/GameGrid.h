@@ -29,6 +29,7 @@ public:
 		}
 
 	}
+
 	FORCEINLINE int32 GetSolutionID() const { return SolutionIndex; }
 protected:
 	int32 SolutionIndex = INVALID_LAYER_ID;

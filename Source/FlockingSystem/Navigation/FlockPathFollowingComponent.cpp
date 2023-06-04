@@ -6,6 +6,9 @@
 
 #include "AIController.h"
 
+constexpr int32 AT_GOAL = 0;
+constexpr int32 NOT_AT_GOAL = -1;
+
 void UFlockPathFollowingComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	if (Status == EPathFollowingStatus::Moving)
@@ -79,46 +82,36 @@ bool UFlockPathFollowingComponent::ShouldEnableSteering() const
 	}
 	else if (ScannedObstacles.bisBlocked)
 	{
-		retval = true;
+		if (ScannedObstacles.bblockedgoal)
+		{
+			retval = false;
+		}
+		else
+		{
+			retval = true;
+		}
 	}
 	return retval;
 }
 
-bool UFlockPathFollowingComponent::IsAngleInRange(float StartAngle, float EndAngle, float Angle) const
+bool UFlockPathFollowingComponent::IsActorAtGoal(const AActor* InActor) const
 {
-	// Ensure that AngleA and AngleB are normalized to the range [0, 360)
-	StartAngle = FMath::Fmod(StartAngle, 360.0f);
-	EndAngle = FMath::Fmod(EndAngle, 360.0f);
+	bool retval = false;
+	const UFlowFieldSolutionLayer* solution = GetFlowFieldSolution();
 
-	// Normalize the AngleToCheck to the range [0, 360)
-	Angle = FMath::Fmod(Angle, 360.0f);
-
-	if (StartAngle < EndAngle)
+	if (IsValid(InActor) && IsValid(solution))
 	{
-		// Case where the range does not wrap around 360 degrees
-		if (Angle >= StartAngle && Angle <= EndAngle)
+		const AGameGrid * grid = solution->GetGameGrid();
+		const FVector actorlocation = InActor->GetActorLocation();
+		const UGridTile* actortile = grid->GetTileFromLocation(actorlocation);
+		
+		if (solution->IsGoalTile(actortile))
 		{
-			return true;
-		}
-	}
-	else if (StartAngle > EndAngle)
-	{
-		// Case where the range wraps around 360 degrees
-		if (Angle >= StartAngle || Angle <= EndAngle)
-		{
-			return true;
-		}
-	}
-	else
-	{
-		// Case where AngleA and AngleB are the same
-		if (Angle == StartAngle)
-		{
-			return true;
+			retval = true;
 		}
 	}
 
-	return false;
+	return retval;
 }
 
 void UFlockPathFollowingComponent::UpdateMovementTiles()
@@ -189,6 +182,7 @@ void UFlockPathFollowingComponent::UpdateObstacles(const FVector DesiredDirectio
 			{
 				const FVector collisionvector = HitResult.Location - agentlocation;
 				ScannedObstacles.bisBlocked = true;
+				ScannedObstacles.bblockedgoal |= IsActorAtGoal(HitResult.GetActor());
 				ScannedObstacles.collisionscore += collisionvector;
 				ScannedObstacles.collisionscore.Normalize();
 			}
@@ -223,11 +217,9 @@ void UFlockPathFollowingComponent::ApplyObstacleSteering(FVector& OutBaseVector,
 		FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
 		OutBaseVector = steerdirection;
 	}
-	// Check if there are any scanned obstacles
-	else if (ScannedObstacles.bisBlocked)
+	// Check if there are any scanned obstacles that aren't standing on the goal
+	else if (ScannedObstacles.bisBlocked  && !ScannedObstacles.bblockedgoal)
 	{
-		FVector SteerDirection = FVector::ZeroVector;
-
 
 		TArray<const UGridTile*> alternatetiles = GetAlternateTileMoves(OutBaseVector, InSolution);
 		if (alternatetiles.Num())
@@ -236,7 +228,7 @@ void UFlockPathFollowingComponent::ApplyObstacleSteering(FVector& OutBaseVector,
 			SetSteeringTile(chosentile);
 			if (IsValid(SteeringTile))
 			{
-				FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
+				const FVector steerdirection = (SteeringTile->GetTileCenter() - CurrentTile->GetTileCenter()).GetSafeNormal();
 				OutBaseVector = steerdirection;
 			}
 
@@ -258,7 +250,7 @@ TArray<const UGridTile*> UFlockPathFollowingComponent::GetAlternateTileMoves(con
 	return retval;
 }
 
-const UGridTile* UFlockPathFollowingComponent::ChooseBestSteeringTile(TArray<const UGridTile*>& InTiles, FVector& InDesiredDirection) const
+const UGridTile* UFlockPathFollowingComponent::ChooseBestSteeringTile(TArray<const UGridTile*>& InTiles,const FVector& InDesiredDirection) const
 {
 	const UGridTile* BestTile = nullptr;
 	double BestScore = -FLT_MAX;
@@ -531,6 +523,14 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 		{
 			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Blocked, FPathFollowingResultFlags::None);
 		}
+	}
+}
+
+void UFlockPathFollowingComponent::OnActorBump(AActor* SelfActor, AActor* OtherActor, FVector NormalImpulse, const FHitResult& Hit)
+{
+	if (IsActorAtGoal(OtherActor))
+	{
+		bCollidedWithGoal = true;
 	}
 }
 

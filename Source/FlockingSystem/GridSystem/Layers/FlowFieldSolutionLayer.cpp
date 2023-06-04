@@ -121,6 +121,11 @@ bool UFlowFieldSolutionLayer::GetWeightForTile(const UGridTile* InTile, float& O
 	return IntegrationLayer->GetTileWeight(InTile, Outweight);
 }
 
+const TSet<UGridTile*>& UFlowFieldSolutionLayer::GetGoalTiles() const
+{
+	return IntegrationLayer->GetGoalTiles();
+}
+
 void UFlowFieldSolutionLayer::LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator)
 {
 	Super::LayerInitialize(InGrid, InActiveTiles, InApplicator);
