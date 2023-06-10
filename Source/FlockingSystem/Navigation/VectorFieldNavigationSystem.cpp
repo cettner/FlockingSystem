@@ -5,6 +5,31 @@
 
 #include "EngineUtils.h"
 
+
+FVectorFieldQuery::FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End) :
+	FPathFindingQueryData(InOwner, Start, End), NavData(&InNavData)
+{
+	if (!QueryFilter.IsValid() && NavData.IsValid())
+	{
+		QueryFilter = NavData->GetDefaultQueryFilter();
+	}
+}
+
+FVectorFieldQuery::FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End) :
+FPathFindingQueryData(Cast<UObject>(&InNavAgent), Start, End)
+{
+
+}
+
+FVectorFieldQuery::FVectorFieldQuery(const FVectorFieldQuery& Source) : FVectorFieldQuery(Source.Owner.Get(), *Source.NavData.Get(), Source.StartLocation, Source.EndLocation)
+{
+	if (!QueryFilter.IsValid() && NavData.IsValid())
+	{
+		QueryFilter = NavData->GetDefaultQueryFilter();
+	}
+}
+
+
 bool UVectorFieldNavigationSystem::RegisterNavData(ANavigationData* InNavData)
 {
 	FScopeLock Lock(&NavDataRegistration);
@@ -20,7 +45,7 @@ void UVectorFieldNavigationSystem::UnRegisterNavData(ANavigationData* InNavData)
 {
 }
 
-FPathFindingResult UVectorFieldNavigationSystem::FindPathSync(FPathFindingQuery& InQuery)
+FPathFindingResult UVectorFieldNavigationSystem::FindVectorFieldPathSync(FVectorFieldQuery& InQuery)
 {
 	FPathFindingResult retval(ENavigationQueryResult::Error);
 	if (InQuery.NavData.IsValid() == false)

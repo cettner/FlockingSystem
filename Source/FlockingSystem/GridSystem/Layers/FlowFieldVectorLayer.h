@@ -19,6 +19,7 @@ class FLOCKINGSYSTEM_API UFlowFieldVectorLayer : public UGridLayer
 	friend class UFlowFieldSolutionLayer;
 
 protected:
+	virtual void OnLayerActivate() override;
 	virtual void PostActivateTile(UGridTile* InTile) override;
 	virtual void ShowTile(UGridTile* InTile) override;
 	virtual void HideTile(UGridTile* InTile) override;
@@ -26,9 +27,11 @@ protected:
 public:
 	virtual bool GetTileVector(const UGridTile* InTile, FVector& OutVector) const;
 
+
 protected:
 	UFlowFieldIntegrationLayer* GetIntegrationLayer() const;
 	void SetIntegrationLayer(UFlowFieldIntegrationLayer* InIntegrationLayer);
+	virtual void BuildFlowField();
 
 protected:
 	TMap<UGridTile*, FVector> FlowMap = TMap<UGridTile*, FVector>();

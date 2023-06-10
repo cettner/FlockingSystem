@@ -18,16 +18,13 @@ class FLOCKINGSYSTEM_API UFlowFieldIntegrationLayer : public UGridLayer
 
 	friend class UFlowFieldSolutionLayer;
 
-protected:
-
 public:
 	FORCEINLINE bool GetTileWeight(const UGridTile * InTile, float& OutCost) const;
-	void AddGoalTile(UGridTile* InTile);
-	void AddGoalTile(TArray<UGridTile*> InTiles);
-	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTiles.Contains(InTile); };
+	void SetGoalTile(const UGridTile* InTile);
+	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTile == InTile;}
 	bool RemoveGoalTile(UGridTile * InTile, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
 	bool RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
-	FORCEINLINE const TSet<UGridTile*>& GetGoalTiles() const { return GoalTiles; }
+	FORCEINLINE const UGridTile* GetGoalTile() const { return GoalTile; }
 	bool DoesGoalExist() const;
 
 public:
@@ -43,8 +40,8 @@ protected:
 	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;
 
 protected:
-	TMap<UGridTile*, float> WeightMap = TMap<UGridTile*, float>();
-	TSet<UGridTile*> GoalTiles = TSet<UGridTile*>();
+	TMap<const UGridTile*, float> WeightMap = TMap<const UGridTile*, float>();
+	const UGridTile* GoalTile = nullptr;
 
 	bool bRequiresRebuild = true;
 

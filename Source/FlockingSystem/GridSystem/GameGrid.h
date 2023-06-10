@@ -27,14 +27,13 @@ public:
 			PathPoints.Add(PathFindingQueryData.EndLocation);
 			bIsReady = InSolution->IsSolutionReady();
 		}
-
 	}
-
 	FORCEINLINE int32 GetSolutionID() const { return SolutionIndex; }
+
 protected:
 	int32 SolutionIndex = INVALID_LAYER_ID;
-
 };
+
 
 UCLASS()
 class FLOCKINGSYSTEM_API AGameGrid : public ANavigationData
@@ -108,6 +107,13 @@ public:
 	virtual void FinishLayerActivation(UGridLayer * InLayer);
 	virtual void SetActiveLayer(UGridLayer* InLayer);
 
+	FORCEINLINE FPathFindingResult FindPath(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query) const
+	{
+		check(FindVectorFieldImplementation);
+		// this awkward implementation avoids virtual call overhead - it's possible this function will be called a lot
+		return (*FindVectorFieldImplementation)(AgentProperties, Query);
+	}
+
 protected:
 	virtual void DrawGridLines();
 	virtual void DrawGridTiles();
@@ -121,13 +127,16 @@ protected:
 
 	/*Navigation*/
 protected:
+
 	/*This Function is a redirect from ANavigationData::FindPathImplementation function pointer, this is done to supercede virtual overhead,
 	matched with the navmesh implementation*/
-	static FPathFindingResult FindVectorField(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query);
+	static FPathFindingResult FindVectorField(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query);
 	void RequestNavigationRegistration();
-	UFlowFieldSolutionLayer* GetSolutionFromQuery(const FPathFindingQuery& Query) const;
-	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FPathFindingQuery& Query);
-	virtual void RebuildAll() override;
+	UFlowFieldSolutionLayer* GetSolutionFromQuery(const FVectorFieldQuery& Query) const;
+	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FVectorFieldQuery& Query);
+	FPathFindingResult RepathSolution(UFlowFieldSolutionLayer* InSolution, ENavPathUpdateType::Type InRepathReason);
+
+	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
 	/*End Navigation*/
 protected:
 	virtual void PreInitializeComponents() override;
@@ -197,6 +206,12 @@ protected:
 	UProceduralMeshComponent* LinesProceduralMesh = nullptr;
 
 	UProceduralMeshComponent* SelectionProceduralMesh = nullptr;
+
+
+protected:
+	typedef FPathFindingResult(*FFindVFieldPtr)(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query);
+	FFindVFieldPtr FindVectorFieldImplementation;
+
 
 #ifdef WITH_EDITOR
 

@@ -9,9 +9,31 @@
 #include "../GridSystem/GameGrid.h"
 #include "VectorFieldNavigationSystem.generated.h"
 
-/**
- * 
- */
+
+
+struct FVectorFieldQuery : public FPathFindingQueryData
+{
+public:
+	FVectorFieldQuery() : FPathFindingQueryData() {}
+	FVectorFieldQuery(const FVectorFieldQuery& Source);
+	FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End);
+	FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End);
+
+public:
+	bool IsDynamicGoal = false;
+	FORCEINLINE AActor* GetGoalActor() const { TargetGoalActor; }
+	FORCEINLINE void SetGoalActor(const AActor* InActor) { TargetGoalActor = InActor; }
+	FORCEINLINE bool IsGoalActor() const { return TargetGoalActor != nullptr; }
+
+protected:
+	const AActor* TargetGoalActor = nullptr;
+
+public:
+	TWeakObjectPtr<const AGameGrid> NavData;
+	FNavPathSharedPtr PathInstanceToFill;
+	FNavAgentProperties NavAgentProperties;
+};
+
 UCLASS()
 class FLOCKINGSYSTEM_API UVectorFieldNavigationSystem : public UNavigationSystemBase
 {
@@ -29,7 +51,7 @@ public:
 	{
 		return Cast<T>(GetNavData());
 	}
-	virtual FPathFindingResult FindPathSync(FPathFindingQuery& InQuery);
+	virtual FPathFindingResult FindVectorFieldPathSync(FVectorFieldQuery& InQuery);
 
 
 public:

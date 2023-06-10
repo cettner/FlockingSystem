@@ -101,13 +101,23 @@ bool UFlockPathFollowingComponent::IsActorAtGoal(const AActor* InActor) const
 
 	if (IsValid(InActor) && IsValid(solution))
 	{
-		const AGameGrid * grid = solution->GetGameGrid();
-		const FVector actorlocation = InActor->GetActorLocation();
-		const UGridTile* actortile = grid->GetTileFromLocation(actorlocation);
+		const AActor * goalactor = Path->GetGoalActor();
 		
-		if (solution->IsGoalTile(actortile))
+		/*Dynamic goal*/
+		if (solution->IsGoalDynamic())
 		{
-			retval = true;
+			/*TODO: add crowdtouching implementation which would be an else if off the solution subscriber list*/
+			retval = (InActor == goalactor);
+		}
+		else
+		{
+			const AGameGrid* grid = solution->GetGameGrid();
+			const FVector actorlocation = InActor->GetActorLocation();
+			const UGridTile* actortile = grid->GetTileFromLocation(actorlocation);
+			if (solution->IsGoalTile(actortile))
+			{
+				retval = true;
+			}
 		}
 	}
 
@@ -417,7 +427,7 @@ void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Re
 	}
 
 	Super::OnPathFinished(Result);
-
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Magenta, FString::Printf(TEXT("PathComplete")));
 }
 
 void UFlockPathFollowingComponent::UpdatePathSegment()
@@ -441,17 +451,8 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 		if (!Path->IsWaitingForRepath())
 		{
 			//UE_VLOG(this, LogPathFollowing, Log, TEXT("Aborting move due to path being invalid and not waiting for repath"));
-			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
+			//UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Aborted, FPathFollowingResultFlags::InvalidPath);
 			return;
-		}
-		else if (HasStartedNavLinkMove() && bCanUpdateState && Status == EPathFollowingStatus::Moving)
-		{
-			// pawn needs to get off navlink to unlock path updates (AAIController::ShouldPostponePathUpdates)
-			if (HasReachedCurrentTarget(CurrentLocation))
-			{
-				OnSegmentFinished();
-				SetNextMoveSegment();
-			}
 		}
 		else
 		{
@@ -479,45 +480,23 @@ void UFlockPathFollowingComponent::UpdatePathSegment()
 			OnSegmentFinished();
 			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
 		}
-		else if (MoveSegmentEndIndex > PreciseAcceptanceRadiusCheckStartNodeIndex && HasReachedDestination(CurrentLocation))
-		{
-			OnSegmentFinished();
-			UPathFollowingComponent::OnPathFinished(EPathFollowingResult::Success, FPathFollowingResultFlags::None);
-		}
-		else if (bFollowingLastSegment && bMoveToGoalOnLastSegment)
-		{
-			// use goal actor for end of last path segment
-			// UNLESS it's partial path (can't reach goal)
-			if (DestinationActor.IsValid() && Path->IsPartial() == false)
-			{
-				const FVector AgentLocation = DestinationAgent ? DestinationAgent->GetNavAgentLocation() : DestinationActor->GetActorLocation();
-				// note that the condition below requires GoalLocation to be in world space.
-				const FVector GoalLocation = FQuatRotationTranslationMatrix(DestinationActor->GetActorQuat(), AgentLocation).TransformPosition(MoveOffset);
-
-				CurrentDestination.Set(NULL, GoalLocation);
-
-				//UE_VLOG(this, LogPathFollowing, Log, TEXT("Moving directly to move goal rather than following last path segment"));
-				//UE_VLOG_LOCATION(this, LogPathFollowing, VeryVerbose, GoalLocation, 30, FColor::Green, TEXT("Last-segment-to-actor"));
-				//UE_VLOG_SEGMENT(this, LogPathFollowing, VeryVerbose, CurrentLocation, GoalLocation, FColor::Green, TEXT_EMPTY);
-			}
 
 			UpdateMoveFocus();
 
 #if !UE_BUILD_SHIPPING
 			DEBUG_bMovingDirectlyToGoal = true;
 #endif // !UE_BUILD_SHIPPING
-		}
+	}
 		// check if current move segment is finished
-		else if (HasReachedCurrentTarget(CurrentLocation))
-		{
-			OnSegmentFinished();
-			SetNextMoveSegment();
-		}
+	else if (HasReachedCurrentTarget(CurrentLocation))
+	{
+		OnSegmentFinished();
+		SetNextMoveSegment();
 	}
 
 	if (bCanUpdateState && Status == EPathFollowingStatus::Moving && MoveRequestId == GetCurrentRequestId())
 	{
-		// gather location samples to detect if moving agent is blocked
+	// gather location samples to detect if moving agent is blocked
 		const bool bHasNewSample = UpdateBlockDetection();
 		if (bHasNewSample && IsBlocked())
 		{
@@ -560,9 +539,13 @@ void UFlockPathFollowingComponent::FollowPathSegment(float DeltaTime)
 			PostProcessMove.ExecuteIfBound(this, outvelocityvector);
 			MovementComp->RequestDirectMove(outvelocityvector, true);
 		}
-		else if (solution->IsGoalTile(currenttile))
+		else if (!solution->IsGoalDynamic() && solution->IsGoalTile(currenttile))
 		{
 			bCollidedWithGoal = true;
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("BadStuff")));
 		}
 	}
 	else

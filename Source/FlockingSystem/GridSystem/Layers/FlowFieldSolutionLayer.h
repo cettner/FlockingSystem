@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "NavigationSystemTypes.h"
 
+
 #include "../GridLayer.h"
 #include "FlowFieldCostLayer.h"
 #include "FlowFieldIntegrationLayer.h"
@@ -20,21 +21,25 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 	GENERATED_BODY()
 
 public:
-	void AddGoalTile(UGridTile* InTile, const bool bRebuildWeights = false);
-	void AddGoalTile(TArray<UGridTile*> InTiles, const bool bRebuildWeights = false);
+	void SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights = false);
+	void SetGoalActor(const AActor* InGoalActor, const bool IsDynamicGoal, const bool bRebuildWeights = false);
 	virtual void SubscribeAgent(const UObject * Subscriber);
 	virtual void UnSubscribeAgent(const UObject* UnSubScriber);
 	FORCEINLINE virtual bool IsAgentSubscribed(const UObject* UnSubScriber) const;
 
 	bool HasGoal() const;
 	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;
+	FORCEINLINE bool IsGoalActor(const AActor* InGoalActor) const { return GoalActor == InGoalActor; }
 	virtual bool RequiresCostRebuild() const;
 	virtual bool RequiresWeightRebuild() const;
 	virtual bool IsSolutionReady() const;
-	virtual bool CanUseSolutionforQuery(const FPathFindingQuery& Query) const;
+	virtual bool CanUseSolutionforQuery(const struct FVectorFieldQuery& Query) const;
 	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
 	FORCEINLINE bool GetWeightForTile(const UGridTile* InTile, float& Outweight) const;
-	FORCEINLINE const TSet<UGridTile*>& GetGoalTiles() const;
+	FORCEINLINE const UGridTile* GetGoalTile() const;
+	FORCEINLINE bool IsGoalDynamic() const { return bIsGoalDynamic; };
+	FORCEINLINE virtual bool NeedsRepath() const;
+	FORCEINLINE const AActor* GetGoalActor() const { return GoalActor; }
 
 protected:
 	virtual bool BuildSolution();
@@ -45,7 +50,7 @@ protected:
 	virtual void OnShowLayer() override;
 	virtual void OnHideLayer() override;
 
-
+	 
 protected:
 	/*Since Cost Data Exists in SuperTiles, we reassemble the cost data here from each of them*/
 	UPROPERTY(transient)
@@ -59,10 +64,17 @@ protected:
 
 	TSet<const UObject*> Subscribers = TSet<const UObject*>();
 
+	bool bIsGoalDynamic = false;
+
+	const AActor* GoalActor = nullptr;
+
+	FVector LastUpdatedGoalPosition = FVector();
+
+	/*Distance required from last position to initiate a Repath*/
+	float RepathTetherDistance = 100.0f;
+
 protected:
 	bool bNeedsCostRebuild = true;
 
 	bool bNeedsWeightRebuild = true;
-
-
 };

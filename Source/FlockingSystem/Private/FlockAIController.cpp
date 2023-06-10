@@ -39,25 +39,24 @@ FPathFollowingRequestResult AFlockAIController::MoveTo(const FAIMoveRequest& Mov
 {
 	FPathFollowingRequestResult ResultData;
 	ResultData.Code = EPathFollowingRequestResult::Failed;
-	
+
 	bool bCanRequestMove = true;
 	const bool bAlreadyAtGoal = bCanRequestMove && GetPathFollowingComponent()->HasReached(MoveRequest);
 
 	if (bAlreadyAtGoal)
 	{
-		//UE_VLOG(this, LogAINavigation, Log, TEXT("MoveTo: already at goal!"));
 		ResultData.MoveId = GetPathFollowingComponent()->RequestMoveWithImmediateFinish(EPathFollowingResult::Success);
 		ResultData.Code = EPathFollowingRequestResult::AlreadyAtGoal;
 	}
 	else
 	{
-		FPathFindingQuery PFQuery;
-		const bool bValidQuery = BuildPathfindingQuery(MoveRequest, PFQuery);
+		FVectorFieldQuery VFQuery;
+		const bool bValidQuery = BuildPathfindingQuery(MoveRequest, VFQuery);
 
 		if (bValidQuery)
 		{
 			FNavPathSharedPtr Path;
-			FindPathForMoveRequest(MoveRequest, PFQuery, Path);
+			FindFieldForMoveRequest(MoveRequest, VFQuery, Path);
 
 			const FAIRequestID RequestID = Path.IsValid() ? RequestMove(MoveRequest, Path) : FAIRequestID::InvalidRequest;
 			if (RequestID.IsValid())
@@ -89,13 +88,13 @@ FAIRequestID AFlockAIController::RequestMove(const FAIMoveRequest& MoveRequest, 
 	return RequestID;
 }
 
-void AFlockAIController::FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const
+void AFlockAIController::FindFieldForMoveRequest(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& Query, FNavPathSharedPtr& OutPath) const
 {
 	UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
 	
 	if (NavSys)
 	{
-		FPathFindingResult PathResult = NavSys->FindPathSync(Query);
+		FPathFindingResult PathResult = NavSys->FindVectorFieldPathSync(Query);
 		if (PathResult.Result != ENavigationQueryResult::Error)
 		{
 			if (PathResult.IsSuccessful() && PathResult.Path.IsValid())
@@ -131,12 +130,12 @@ void AFlockAIController::SetGoalLocation(FVector InLocation)
 	}
 }
 
-bool AFlockAIController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const
+bool AFlockAIController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& OutQuery) const
 {
 	bool bResult = false;
 
 	UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
-	const ANavigationData* NavData = (NavSys == nullptr) ? nullptr : NavSys->GetNavDataForProps(GetNavAgentPropertiesRef(), GetNavAgentLocation());
+	const AGameGrid* NavData = (NavSys == nullptr) ? nullptr : Cast<AGameGrid>(NavSys->GetNavDataForProps(GetNavAgentPropertiesRef(), GetNavAgentLocation()));
 
 
 	if (NavData)
@@ -156,14 +155,9 @@ bool AFlockAIController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest
 			}
 		}
 
-		FSharedConstNavQueryFilter NavFilter = UNavigationQueryFilter::GetQueryFilter(*NavData, this, MoveRequest.GetNavigationFilter());
-		OutQuery = FPathFindingQuery(*this, *NavData, GetNavAgentLocation(), GoalLocation, NavFilter);
-		OutQuery.SetAllowPartialPaths(MoveRequest.IsUsingPartialPaths());
-
-		if (GetPathFollowingComponent())
-		{
-			GetPathFollowingComponent()->OnPathfindingQuery(OutQuery);
-		}
+		OutQuery = FVectorFieldQuery(*this, *NavData, GetNavAgentLocation(), GoalLocation);
+		OutQuery.IsDynamicGoal = MoveRequest.GetGoalActor() != nullptr;
+		OutQuery.SetGoalActor(MoveRequest.GetGoalActor());
 
 		bResult = true;
 	}

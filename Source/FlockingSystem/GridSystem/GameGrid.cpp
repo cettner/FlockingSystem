@@ -13,7 +13,7 @@ AGameGrid::AGameGrid() : Super()
     LinesProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Grid Line Drawing Component"));
     SelectionProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Tile Drawing Component"));
 
-    FindPathImplementation = FindVectorField;
+    FindVectorFieldImplementation = FindVectorField;
 }
 
 int32 AGameGrid::GetMaxTiles() const
@@ -390,11 +390,6 @@ void AGameGrid::InitializeLayers()
     }
 }
 
-void AGameGrid::RebuildAll()
-{
-    int debug = 9;
-}
-
 void AGameGrid::PreInitializeComponents()
 {
     AActor::PreInitializeComponents();
@@ -509,10 +504,9 @@ bool AGameGrid::RemoveGridLayer(UGridLayer* InLayerToRemove)
     return retval;
 }
 
-
 /*****Start Navigation ***/
 /*Equivalent of findpath*/
-FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentProperties, const FPathFindingQuery& Query)
+FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query)
 {
     const ANavigationData* selfdata = Query.NavData.Get();
     AGameGrid* selfptr = const_cast<AGameGrid*>(Cast<AGameGrid>(selfdata));
@@ -524,16 +518,17 @@ FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentPr
 
     if (navfieldpath)
     {
-        retval.Path = Query.PathInstanceToFill;
-        navfieldpath->ResetForRepath();
+
     }
     else
     {
         retval.Path = selfptr->CreatePathInstance<FVectorFieldPath>(Query);
         navpath = retval.Path.Get();
         navfieldpath = navpath ? navpath->CastPath<FVectorFieldPath>() : nullptr;
+        
+        const FVectorFieldQuery* vectorquery = static_cast<const FVectorFieldQuery*>(&Query);
 
-        UFlowFieldSolutionLayer* potentialsolution = selfptr->GetSolutionFromQuery(Query);
+        UFlowFieldSolutionLayer* potentialsolution = selfptr->GetSolutionFromQuery(*vectorquery);
         if (potentialsolution)
         {
             navfieldpath->InitSolution(potentialsolution);
@@ -541,7 +536,7 @@ FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentPr
         }
         else
         {
-           UFlowFieldSolutionLayer * solutionlayer =  selfptr->BuildSolutionFromQuery(Query);
+           UFlowFieldSolutionLayer * solutionlayer =  selfptr->BuildSolutionFromQuery(*vectorquery);
            if (solutionlayer)
            {
                navfieldpath->InitSolution(solutionlayer); 
@@ -569,10 +564,9 @@ void AGameGrid::RequestNavigationRegistration()
     }
 }
 
-UFlowFieldSolutionLayer* AGameGrid::GetSolutionFromQuery(const FPathFindingQuery& Query) const
+UFlowFieldSolutionLayer* AGameGrid::GetSolutionFromQuery(const FVectorFieldQuery& Query) const
 {
     UFlowFieldSolutionLayer* retval = nullptr;
-    const FVector endgoallocation = Query.EndLocation;
 
     for (int i = 0; i < GridLayers.Num(); i++)
     {
@@ -589,21 +583,180 @@ UFlowFieldSolutionLayer* AGameGrid::GetSolutionFromQuery(const FPathFindingQuery
     return retval;
 }
 
-UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FPathFindingQuery& Query)
+UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FVectorFieldQuery& Query)
 {
    UFlowFieldSolutionLayer* retval = nullptr;
-   const FVector endlocation = Query.EndLocation;
-   UGridTile* basegoaltile = GetTileFromLocation(endlocation);
 
-    if (basegoaltile != nullptr)
-    {
-        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
-        retval->AddGoalTile(basegoaltile);
-        SetActiveLayer(retval);
+   if (Query.IsGoalActor())
+   {
+       retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
+       retval->SetGoalActor(Query.GetGoalActor(), Query.IsDynamicGoal);
+       SetActiveLayer(retval);
+   }
+   else
+   {
+      const FVector endlocation = Query.EndLocation;
+      const UGridTile* basegoaltile = GetTileFromLocation(endlocation);
+      if (basegoaltile != nullptr)
+      {
+          retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
+          retval->SetGoalTile(basegoaltile);
+          SetActiveLayer(retval);
+       }
     }
 
     return retval;
 }
+
+FPathFindingResult AGameGrid::RepathSolution(UFlowFieldSolutionLayer* InSolution, ENavPathUpdateType::Type InRepathReason)
+{
+    FPathFindingResult retval = FPathFindingResult();
+
+    if (InRepathReason == ENavPathUpdateType::GoalMoved)
+    {
+        const UGridTile* oldgoaltile = InSolution->GetGoalTile();
+
+
+
+
+        if (InSolution->IsSolutionReady())
+        {
+            retval.Result = ENavigationQueryResult::Success;
+        }
+
+        const UGridTile* newgoaltile = InSolution->GetGoalTile();
+        FVector dumbugtest = FVector();
+
+        if (InSolution->GetFlowVectorForTile(oldgoaltile, dumbugtest))
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Repath Completed for Solution %d from Tile %d to Tile %d"), InSolution->GetLayerID(), oldgoaltile->GetTileID(), newgoaltile->GetTileID()));
+        }
+        else
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Repath Failed for Tile %d"), oldgoaltile->GetTileID()));
+        }
+    }
+
+
+    return retval;
+}
+
+void AGameGrid::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
+{
+    PurgeUnusedPaths();
+
+    // INC_DWORD_STAT_BY(STAT_Navigation_ObservedPathsCount, ObservedPaths.Num());
+
+    if (NextObservedPathsTickInSeconds >= 0.f)
+    {
+        NextObservedPathsTickInSeconds -= DeltaTime;
+        if (NextObservedPathsTickInSeconds <= 0.f)
+        {
+            RepathRequests.Reserve(ObservedPaths.Num());
+
+            for (int32 PathIndex = ObservedPaths.Num() - 1; PathIndex >= 0; --PathIndex)
+            {
+                if (ObservedPaths[PathIndex].IsValid())
+                {
+                    FNavPathSharedPtr SharedPath = ObservedPaths[PathIndex].Pin();
+                    FNavigationPath* Path = SharedPath.Get();
+                    EPathObservationResult::Type Result = Path->TickPathObservation();
+                    switch (Result)
+                    {
+                    case EPathObservationResult::NoLongerObserving:
+                        ObservedPaths.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
+                        break;
+
+                    case EPathObservationResult::NoChange:
+                        // do nothing
+                        break;
+
+                    case EPathObservationResult::RequestRepath:
+                        RepathRequests.Add(FNavPathRecalculationRequest(SharedPath, ENavPathUpdateType::GoalMoved));
+                        break;
+
+                    default:
+                        check(false && "unhandled EPathObservationResult::Type in ANavigationData::TickActor");
+                        break;
+                    }
+                }
+                else
+                {
+                    ObservedPaths.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
+                }
+            }
+
+            if (ObservedPaths.Num() > 0)
+            {
+                NextObservedPathsTickInSeconds = ObservedPathsTickInterval;
+            }
+        }
+    }
+
+    if (RepathRequests.Num() > 0)
+    {
+        float TimeStamp = GetWorldTimeStamp();
+        const UWorld* World = GetWorld();
+
+        // @todo batch-process it!
+
+        const int32 MaxProcessedRequests = 1000;
+
+        // make a copy of path requests and reset (remove up to MaxProcessedRequests) from navdata's array
+        // this allows storing new requests in the middle of loop (e.g. used by meta path corrections)
+
+        TArray<FNavPathRecalculationRequest> WorkQueue(RepathRequests);
+        if (WorkQueue.Num() > MaxProcessedRequests)
+        {
+            WorkQueue.RemoveAt(MaxProcessedRequests, WorkQueue.Num() - MaxProcessedRequests);
+            RepathRequests.RemoveAt(0, MaxProcessedRequests);
+        }
+        else
+        {
+            RepathRequests.Reset();
+        }
+
+        for (int32 Idx = 0; Idx < WorkQueue.Num(); Idx++)
+        {
+            FNavPathRecalculationRequest& RecalcRequest = WorkQueue[Idx];
+
+            // check if it can be updated right now
+            FNavPathSharedPtr PinnedPath = RecalcRequest.Path.Pin();
+            if (PinnedPath.IsValid() == false)
+            {
+                continue;
+            }
+
+            FVectorFieldPath* path = PinnedPath->CastPath<FVectorFieldPath>();
+            int32 id = path->GetSolutionID();
+            UFlowFieldSolutionLayer* solution = GetLayerByIndex<UFlowFieldSolutionLayer>(id);
+
+            const FPathFindingResult Result = RepathSolution(solution, ENavPathUpdateType::GoalMoved);
+
+
+
+            // update time stamp to give observers any means of telling if it has changed
+            PinnedPath->SetTimeStamp(TimeStamp);
+
+            // partial paths are still valid and can change to full path when moving goal gets back on navmesh
+            if (Result.IsSuccessful() || Result.IsPartial())
+            {
+                PinnedPath->UpdateLastRepathGoalLocation();
+                PinnedPath->DoneUpdating(RecalcRequest.Reason);
+                if (RecalcRequest.Reason == ENavPathUpdateType::NavigationChanged)
+                {
+                    RegisterActivePath(PinnedPath);
+                }
+            }
+            else
+            {
+                //PinnedPath->RePathFailed();
+            }
+        }
+    }
+
+}
+
 /*************End Navigation****************/
 
 void AGameGrid::PostLoad()

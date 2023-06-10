@@ -18,18 +18,15 @@ bool UFlowFieldIntegrationLayer::GetTileWeight(const UGridTile* InTile, float& O
 	return retval;
 }
 
-void UFlowFieldIntegrationLayer::AddGoalTile(UGridTile* InTile)
+void UFlowFieldIntegrationLayer::SetGoalTile(const UGridTile* InTile)
 {
-	GoalTiles.Emplace(InTile);
-	WeightMap.Emplace(InTile, GOAL_TILE_WEIGHT);
-}
-
-void UFlowFieldIntegrationLayer::AddGoalTile(TArray<UGridTile*> InTiles)
-{
-	for (int32 i = 0; i < InTiles.Num(); i++)
+	if (!IsGoalTile(InTile))
 	{
-		AddGoalTile(InTiles[i]);
+		GoalTile = InTile;
+		WeightMap.Emplace(InTile, GOAL_TILE_WEIGHT);
+		bRequiresRebuild = true;
 	}
+
 }
 
 bool UFlowFieldIntegrationLayer::RemoveGoalTile(UGridTile* InTile, float InReplacementWeight, bool InRebuildifSuccessful)
@@ -44,7 +41,7 @@ bool UFlowFieldIntegrationLayer::RemoveGoalTile(TArray<UGridTile*> InTiles, floa
 
 bool UFlowFieldIntegrationLayer::DoesGoalExist() const
 {
-	const bool retval = GoalTiles.Num() > 0;
+	const bool retval = GoalTile != nullptr;
 	return retval;
 }
 
@@ -91,14 +88,13 @@ void UFlowFieldIntegrationLayer::HideTile(UGridTile* InTile)
 
 void UFlowFieldIntegrationLayer::RebuildWeights()
 {
+	WeightMap.Reset();
 	for (int i = 0; i < ActiveTiles.Num(); i++)
 	{
 		WeightMap.Emplace(ActiveTiles[i], UNVISITED_TILE_WEIGHT);
 	}
-	for (UGridTile*& goaltile : GoalTiles)
-	{
-		WeightMap.Emplace(goaltile, GOAL_TILE_WEIGHT);
-	}
+
+	WeightMap.Emplace(GoalTile, GOAL_TILE_WEIGHT);
 }
 
 void UFlowFieldIntegrationLayer::BuildWeights()
@@ -108,15 +104,13 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 	if (DoesGoalExist())
 	{
 		/*create a list of tiles that need to be explored, starting at the goals and branching out as the algorithm extends*/
-		TQueue<UGridTile*> openlist = TQueue<UGridTile*>();
+		TQueue<const UGridTile*> openlist = TQueue<const UGridTile*>();
 		/*The Queue class doesnt support internal retrival so this set lets us check whats in openlist*/
-		TSet<UGridTile*> visitedlist = TSet<UGridTile*>(GoalTiles);
-		for (UGridTile *& goaltile : GoalTiles)
-		{
-			openlist.Enqueue(goaltile);
-		}
+		TSet<const UGridTile*> visitedlist = TSet<const UGridTile*>();
+		openlist.Enqueue(GoalTile);
+		visitedlist.Emplace(GoalTile);
 
-		UGridTile* roottile;
+		const UGridTile* roottile;
 		/*While Tiles need to be explored, get the one at the front of the list*/
 		while (openlist.Dequeue(roottile))
 		{
@@ -170,7 +164,11 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 
 void UFlowFieldIntegrationLayer::SetCostData(const TMap<UGridTile*, uint8>& InCostMap)
 {
-	CostMapRef = &InCostMap;
+	if (CostMapRef != &InCostMap)
+	{
+		CostMapRef = &InCostMap;
+		bRequiresRebuild = true;
+	}
 }
 
 bool UFlowFieldIntegrationLayer::GetTileCost(const UGridTile* InTile, uint8& OutCost) const

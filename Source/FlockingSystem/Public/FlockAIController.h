@@ -4,6 +4,8 @@
 
 #include "CoreMinimal.h"
 #include "AIController.h"
+
+#include "../GridSystem/GameGrid.h"
 #include "FlockAIController.generated.h"
 
 /**
@@ -24,7 +26,7 @@ public:
 	/** Passes move request and path object to path following */
 	virtual FAIRequestID RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path) override;
 
-	virtual void FindPathForMoveRequest(const FAIMoveRequest& MoveRequest, FPathFindingQuery& Query, FNavPathSharedPtr& OutPath) const override;
+	virtual void FindFieldForMoveRequest(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& Query, FNavPathSharedPtr& OutPath) const;
 
 	virtual void SetGoalActor(AActor* InGoal);
 
@@ -32,7 +34,7 @@ public:
 
 protected:
 
-	virtual bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FPathFindingQuery& OutQuery) const;
+	virtual bool BuildPathfindingQuery(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& OutQuery) const;
 
 
 protected:
