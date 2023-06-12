@@ -23,10 +23,8 @@ void UFlowFieldIntegrationLayer::SetGoalTile(const UGridTile* InTile)
 	if (!IsGoalTile(InTile))
 	{
 		GoalTile = InTile;
-		WeightMap.Emplace(InTile, GOAL_TILE_WEIGHT);
 		bRequiresRebuild = true;
 	}
-
 }
 
 bool UFlowFieldIntegrationLayer::RemoveGoalTile(UGridTile* InTile, float InReplacementWeight, bool InRebuildifSuccessful)
@@ -86,21 +84,16 @@ void UFlowFieldIntegrationLayer::HideTile(UGridTile* InTile)
 	FlushDebugStrings(GetWorld());
 }
 
-void UFlowFieldIntegrationLayer::RebuildWeights()
+void UFlowFieldIntegrationLayer::ResetWeights()
 {
 	WeightMap.Reset();
-	for (int i = 0; i < ActiveTiles.Num(); i++)
-	{
-		WeightMap.Emplace(ActiveTiles[i], UNVISITED_TILE_WEIGHT);
-	}
-
-	WeightMap.Emplace(GoalTile, GOAL_TILE_WEIGHT);
+	GoalTile = nullptr;
+	bRequiresRebuild = true;
 }
 
 void UFlowFieldIntegrationLayer::BuildWeights()
 {
 	/*set the value of all tiles except the goal(s) to max / unexplored value*/
-	RebuildWeights();
 	if (DoesGoalExist())
 	{
 		/*create a list of tiles that need to be explored, starting at the goals and branching out as the algorithm extends*/
@@ -110,6 +103,12 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 		openlist.Enqueue(GoalTile);
 		visitedlist.Emplace(GoalTile);
 
+		for (int i = 0; i < ActiveTiles.Num(); i++)
+		{
+			WeightMap.Emplace(ActiveTiles[i], UNVISITED_TILE_WEIGHT);
+		}
+
+		WeightMap.Emplace(GoalTile, GOAL_TILE_WEIGHT);
 		const UGridTile* roottile;
 		/*While Tiles need to be explored, get the one at the front of the list*/
 		while (openlist.Dequeue(roottile))
@@ -159,6 +158,7 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 				}
 			}
 		}
+		bRequiresRebuild = false;
 	}
 }
 

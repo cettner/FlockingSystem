@@ -16,16 +16,16 @@ struct FVectorFieldQuery : public FPathFindingQueryData
 public:
 	FVectorFieldQuery() : FPathFindingQueryData() {}
 	FVectorFieldQuery(const FVectorFieldQuery& Source);
-	FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End);
-	FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End);
+	FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End, FSharedConstNavQueryFilter SourceQueryFilter = NULL, FNavPathSharedPtr InPathInstanceToFill = NULL, const float CostLimit = FLT_MAX);
+	FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End, FSharedConstNavQueryFilter SourceQueryFilter = NULL, FNavPathSharedPtr InPathInstanceToFill = NULL, const float CostLimit = FLT_MAX);
 
 public:
 	bool IsDynamicGoal = false;
-	FORCEINLINE AActor* GetGoalActor() const { TargetGoalActor; }
+	FORCEINLINE const AActor* GetGoalActor() const { TargetGoalActor; }
 	FORCEINLINE void SetGoalActor(const AActor* InActor) { TargetGoalActor = InActor; }
 	FORCEINLINE bool IsGoalActor() const { return TargetGoalActor != nullptr; }
 
-protected:
+public:
 	const AActor* TargetGoalActor = nullptr;
 
 public:

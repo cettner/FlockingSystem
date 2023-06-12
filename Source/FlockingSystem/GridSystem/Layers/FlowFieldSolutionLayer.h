@@ -23,6 +23,8 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 public:
 	void SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights = false);
 	void SetGoalActor(const AActor* InGoalActor, const bool IsDynamicGoal, const bool bRebuildWeights = false);
+	virtual bool BuildSolution();
+	virtual void ResetSolution();
 	virtual void SubscribeAgent(const UObject * Subscriber);
 	virtual void UnSubscribeAgent(const UObject* UnSubScriber);
 	FORCEINLINE virtual bool IsAgentSubscribed(const UObject* UnSubScriber) const;
@@ -42,7 +44,6 @@ public:
 	FORCEINLINE const AActor* GetGoalActor() const { return GoalActor; }
 
 protected:
-	virtual bool BuildSolution();
 	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator) override;
 	virtual void OnCostLayerRebuilt(UFlowFieldCostLayer * InRebuiltLayer);
 	virtual bool InitializeCostData();
@@ -75,6 +76,4 @@ protected:
 
 protected:
 	bool bNeedsCostRebuild = true;
-
-	bool bNeedsWeightRebuild = true;
 };

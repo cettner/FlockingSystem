@@ -20,11 +20,11 @@ class FLOCKINGSYSTEM_API UFlowFieldIntegrationLayer : public UGridLayer
 
 public:
 	FORCEINLINE bool GetTileWeight(const UGridTile * InTile, float& OutCost) const;
+	FORCEINLINE const UGridTile* GetGoalTile() const { return GoalTile; }
+	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTile == InTile; }
 	void SetGoalTile(const UGridTile* InTile);
-	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTile == InTile;}
 	bool RemoveGoalTile(UGridTile * InTile, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
 	bool RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
-	FORCEINLINE const UGridTile* GetGoalTile() const { return GoalTile; }
 	bool DoesGoalExist() const;
 
 public:
@@ -34,7 +34,7 @@ public:
 
 
 protected:
-	virtual void RebuildWeights();
+	virtual void ResetWeights();
 	virtual void BuildWeights();
 	virtual void SetCostData(const TMap<UGridTile*, uint8>& InCostMap);
 	virtual bool GetTileCost(const UGridTile* InTile, uint8& OutCost) const;

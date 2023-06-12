@@ -526,9 +526,7 @@ FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentPr
         navpath = retval.Path.Get();
         navfieldpath = navpath ? navpath->CastPath<FVectorFieldPath>() : nullptr;
         
-        const FVectorFieldQuery* vectorquery = static_cast<const FVectorFieldQuery*>(&Query);
-
-        UFlowFieldSolutionLayer* potentialsolution = selfptr->GetSolutionFromQuery(*vectorquery);
+        UFlowFieldSolutionLayer* potentialsolution = selfptr->GetSolutionFromQuery(Query);
         if (potentialsolution)
         {
             navfieldpath->InitSolution(potentialsolution);
@@ -536,7 +534,7 @@ FPathFindingResult AGameGrid::FindVectorField(const FNavAgentProperties& AgentPr
         }
         else
         {
-           UFlowFieldSolutionLayer * solutionlayer =  selfptr->BuildSolutionFromQuery(*vectorquery);
+           UFlowFieldSolutionLayer * solutionlayer =  selfptr->BuildSolutionFromQuery(Query);
            if (solutionlayer)
            {
                navfieldpath->InitSolution(solutionlayer); 
@@ -590,7 +588,8 @@ UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FVectorFieldQue
    if (Query.IsGoalActor())
    {
        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
-       retval->SetGoalActor(Query.GetGoalActor(), Query.IsDynamicGoal);
+
+       retval->SetGoalActor(Query.TargetGoalActor, Query.IsDynamicGoal);
        SetActiveLayer(retval);
    }
    else
@@ -616,8 +615,9 @@ FPathFindingResult AGameGrid::RepathSolution(UFlowFieldSolutionLayer* InSolution
     {
         const UGridTile* oldgoaltile = InSolution->GetGoalTile();
 
-
-
+        InSolution->ResetSolution();
+        InSolution->SetGoalActor(InSolution->GetGoalActor(), true, true);
+        InSolution->BuildSolution();
 
         if (InSolution->IsSolutionReady())
         {

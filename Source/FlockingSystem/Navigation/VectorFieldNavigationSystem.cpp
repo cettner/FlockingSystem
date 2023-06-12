@@ -6,8 +6,9 @@
 #include "EngineUtils.h"
 
 
-FVectorFieldQuery::FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End) :
-	FPathFindingQueryData(InOwner, Start, End), NavData(&InNavData)
+FVectorFieldQuery::FVectorFieldQuery(const UObject* InOwner, const AGameGrid& InNavData, const FVector& Start, const FVector& End, FSharedConstNavQueryFilter SourceQueryFilter, FNavPathSharedPtr InPathInstanceToFill, const float CostLimit) :
+	FPathFindingQueryData(InOwner, Start, End, SourceQueryFilter, 0 /*InNavDataFlags*/, true /*bInAllowPartialPaths*/, CostLimit),
+	NavData(&InNavData), PathInstanceToFill(InPathInstanceToFill), NavAgentProperties(InNavData.GetConfig())
 {
 	if (!QueryFilter.IsValid() && NavData.IsValid())
 	{
@@ -15,13 +16,9 @@ FVectorFieldQuery::FVectorFieldQuery(const UObject* InOwner, const AGameGrid& In
 	}
 }
 
-FVectorFieldQuery::FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End) :
-FPathFindingQueryData(Cast<UObject>(&InNavAgent), Start, End)
-{
-
-}
-
-FVectorFieldQuery::FVectorFieldQuery(const FVectorFieldQuery& Source) : FVectorFieldQuery(Source.Owner.Get(), *Source.NavData.Get(), Source.StartLocation, Source.EndLocation)
+FVectorFieldQuery::FVectorFieldQuery(const INavAgentInterface& InNavAgent, const AGameGrid& InNavData, const FVector& Start, const FVector& End, FSharedConstNavQueryFilter SourceQueryFilter, FNavPathSharedPtr InPathInstanceToFill, const float CostLimit) :
+	FPathFindingQueryData(Cast<UObject>(&InNavAgent), Start, End, SourceQueryFilter, 0 /*InNavDataFlags*/, true /*bInAllowPartialPaths*/, CostLimit),
+	NavData(&InNavData), PathInstanceToFill(InPathInstanceToFill), NavAgentProperties(InNavAgent.GetNavAgentPropertiesRef())
 {
 	if (!QueryFilter.IsValid() && NavData.IsValid())
 	{
@@ -29,6 +26,15 @@ FVectorFieldQuery::FVectorFieldQuery(const FVectorFieldQuery& Source) : FVectorF
 	}
 }
 
+FVectorFieldQuery::FVectorFieldQuery(const FVectorFieldQuery& Source) :
+	FPathFindingQueryData(Source.Owner.Get(), Source.StartLocation, Source.EndLocation, Source.QueryFilter, Source.NavDataFlags, Source.bAllowPartialPaths, Source.CostLimit),
+	NavData(Source.NavData), PathInstanceToFill(Source.PathInstanceToFill), NavAgentProperties(Source.NavAgentProperties)
+{
+	if (!QueryFilter.IsValid() && NavData.IsValid())
+	{
+		QueryFilter = NavData->GetDefaultQueryFilter();
+	}
+}
 
 bool UVectorFieldNavigationSystem::RegisterNavData(ANavigationData* InNavData)
 {
@@ -113,8 +119,6 @@ void UVectorFieldNavigationSystem::InitializeForWorld(UWorld& InWorld, FNavigati
 		}
 	}
 }
-
-
 
 void UVectorFieldNavigationSystem::RequestRegistrationDeferred(ANavigationData& NavData)
 {

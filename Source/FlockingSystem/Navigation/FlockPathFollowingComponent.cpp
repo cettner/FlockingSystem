@@ -427,7 +427,26 @@ void UFlockPathFollowingComponent::OnPathFinished(const FPathFollowingResult& Re
 	}
 
 	Super::OnPathFinished(Result);
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Magenta, FString::Printf(TEXT("PathComplete")));
+
+	FString stringreason = "NAN";
+
+	switch (Result.Code)
+	{
+	case EPathFollowingResult::Aborted :
+		stringreason = "Aborted";
+		break;
+	case EPathFollowingResult::Blocked :
+		stringreason = "Blocked";
+		break;
+	case EPathFollowingResult::Success :
+		stringreason = "Success";
+		break;
+
+	default:
+		break;
+	}
+
+	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Magenta, FString::Printf(TEXT("PathComplete Reason: %s"), *stringreason));
 }
 
 void UFlockPathFollowingComponent::UpdatePathSegment()
@@ -545,7 +564,7 @@ void UFlockPathFollowingComponent::FollowPathSegment(float DeltaTime)
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("BadStuff")));
+			//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("BadStuff")));
 		}
 	}
 	else

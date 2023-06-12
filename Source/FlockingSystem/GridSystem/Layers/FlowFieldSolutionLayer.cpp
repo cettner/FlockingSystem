@@ -12,25 +12,18 @@ void UFlowFieldSolutionLayer::SetGoalTile(const UGridTile* InTile, const bool bR
 {
 	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("GoalTile Set Request %d"), InTile->GetTileID()));
 	IntegrationLayer->SetGoalTile(InTile);
-
-	if(bRebuildWeights == true  && RequiresWeightRebuild())
-	{
-		IntegrationLayer->BuildWeights();
-		VectorLayer->BuildFlowField();
-	}
-
 }
 
 void UFlowFieldSolutionLayer::SetGoalActor(const AActor* InGoalActor, const bool IsDynamicGoal, const bool bRebuildWeights)
 {
 	if (IsValid(InGoalActor))
 	{
-		UGridTile* goaltile = GetGameGrid()->GetTileFromLocation(InGoalActor->GetActorLocation());
+		const UGridTile* goaltile = GetGameGrid()->GetTileFromLocation(InGoalActor->GetActorLocation());
 
 		if (goaltile != nullptr)
 		{
 			GoalActor = InGoalActor;
-			LastUpdatedGoalPosition = Cast<INavAgentInterface>(InGoalActor) ? Cast<INavAgentInterface>(InGoalActor)->GetNavAgentLocation() : InGoalActor->GetActorLocation();
+			LastUpdatedGoalPosition = InGoalActor->GetActorLocation();
 			bIsGoalDynamic = IsDynamicGoal;
 			SetGoalTile(goaltile, bRebuildWeights);
 		}
@@ -69,6 +62,12 @@ bool UFlowFieldSolutionLayer::IsGoalTile(const UGridTile* InGridTile) const
 	return retval;
 }
 
+void UFlowFieldSolutionLayer::ResetSolution()
+{
+	IntegrationLayer->ResetWeights();
+	VectorLayer->ResetFlowField();
+}
+
 bool UFlowFieldSolutionLayer::BuildSolution()
 {
 	bool retval = true;
@@ -77,7 +76,6 @@ bool UFlowFieldSolutionLayer::BuildSolution()
 	if (brebuildweight && bhasgoal)
 	{
 		IntegrationLayer->OnLayerActivate();
-		bNeedsWeightRebuild = false;
 		VectorLayer->OnLayerActivate();
 	}
 	else
@@ -95,12 +93,12 @@ bool UFlowFieldSolutionLayer::RequiresCostRebuild() const
 
 bool UFlowFieldSolutionLayer::RequiresWeightRebuild() const
 {
-	return bNeedsWeightRebuild;
+	return IntegrationLayer->bRequiresRebuild;
 }
 
 bool UFlowFieldSolutionLayer::IsSolutionReady() const
 {
-	return HasGoal() && !bNeedsCostRebuild && !bNeedsWeightRebuild;
+	return HasGoal() && !bNeedsCostRebuild && !RequiresWeightRebuild();
 }
 
 bool UFlowFieldSolutionLayer::CanUseSolutionforQuery(const FVectorFieldQuery& Query) const
