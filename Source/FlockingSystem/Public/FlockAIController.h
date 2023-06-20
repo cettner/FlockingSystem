@@ -23,9 +23,6 @@ public:
 	/*Calls Request Move*/
 	virtual FPathFollowingRequestResult MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath = nullptr) override;
 
-	/** Passes move request and path object to path following */
-	virtual FAIRequestID RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path) override;
-
 	virtual void FindFieldForMoveRequest(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& Query, FNavPathSharedPtr& OutPath) const;
 
 	virtual void SetGoalActor(AActor* InGoal);

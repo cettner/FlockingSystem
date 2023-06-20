@@ -37,31 +37,13 @@ int32 AGameGrid::GetMaxTiles() const
 
 int32 AGameGrid::GetMaxRows() const
 {
-    int32 retval = 0;
-    if (TileShape == EGridTileType::SQUARE)
-    {
-        retval = FMath::FloorToInt(GridLength / TileEdgeLength);
-    }
-    else if (TileShape == EGridTileType::HEXAGON)
-    {
-        retval = FMath::FloorToInt((GridLength / (TileEdgeLength * FMath::Sqrt(3.0f))) * 2.0f);
-    }
-
+    const int32 retval = FMath::FloorToInt(GridLength / TileEdgeLength);
     return retval;
 }
 
 int32 AGameGrid::GetMaxCols() const
 {
-    int32 retval = 0;
-    if (TileShape == EGridTileType::SQUARE)
-    {
-        retval = FMath::FloorToInt(GridWidth / TileEdgeLength);
-    }
-    else if (TileShape == EGridTileType::HEXAGON)
-    {
-        retval = FMath::FloorToInt(GridWidth / (TileEdgeLength * 1.5f));
-    }
-
+    const int32 retval = FMath::FloorToInt(GridWidth / TileEdgeLength);
     return retval;
 }  
 
@@ -73,7 +55,7 @@ EGridTileType AGameGrid::GetTileShape() const
 float AGameGrid::GetTileRadius() const
 {
     //todo update for hex and triangles
-    return TileEdgeLength / FMath::Sqrt(2.0f);
+    return TileEdgeLength / UE_SQRT_2;
 }
 
 float AGameGrid::GetTileEdgeLength() const
@@ -115,23 +97,20 @@ UGridTile* AGameGrid::GetTileFromLocation(const FVector& InLocation) const
 {
     UGridTile* retval = nullptr;
 
-    if (TileShape == EGridTileType::SQUARE)
+    const int32 maxrows = GetMaxRows();
+    const int32 maxcols = GetMaxCols();
+    const FVector gridstartlocation = GetActorLocation();
+    const float ydiff = (InLocation.Y - gridstartlocation.Y);
+    const float xdiff = (InLocation.X - gridstartlocation.X);
+
+    const int32 approxcol = floorf(ydiff / (TileEdgeLength));
+    const int32 approxrow = floorf(xdiff / (TileEdgeLength));
+
+    const int32 approxindex = (approxrow * maxcols) + approxcol;
+
+    if (approxindex > INVALID_TILE_ID && approxindex < GridData.Num())
     {
-        const int32 maxrows = GetMaxRows();
-        const int32 maxcols = GetMaxCols();
-        const FVector gridstartlocation = GetActorLocation();
-        const float ydiff = (InLocation.Y - gridstartlocation.Y);
-        const float xdiff = (InLocation.X - gridstartlocation.X);
-
-        const int32 approxcol = floorf(ydiff / (TileEdgeLength));
-        const int32 approxrow = floorf(xdiff / (TileEdgeLength));
-
-        const int32 approxindex = (approxrow * maxcols) + approxcol;
-
-        if (approxindex > INVALID_TILE_ID && approxindex < GridData.Num())
-        {
-            retval = GridData[approxindex];
-        }
+        retval = GridData[approxindex];
     }
 
 
@@ -588,20 +567,14 @@ UFlowFieldSolutionLayer* AGameGrid::BuildSolutionFromQuery(const FVectorFieldQue
    if (Query.IsGoalActor())
    {
        retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
-
        retval->SetGoalActor(Query.TargetGoalActor, Query.IsDynamicGoal);
        SetActiveLayer(retval);
    }
-   else
+   else if(IsValidGridLocation(Query.EndLocation))
    {
-      const FVector endlocation = Query.EndLocation;
-      const UGridTile* basegoaltile = GetTileFromLocation(endlocation);
-      if (basegoaltile != nullptr)
-      {
-          retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
-          retval->SetGoalTile(basegoaltile);
-          SetActiveLayer(retval);
-       }
+      retval = Cast<UFlowFieldSolutionLayer>(AddGridLayer(UFlowFieldSolutionLayer::StaticClass(), GetTiles(), this));
+      retval->SetGoalLocation(Query.EndLocation);
+      SetActiveLayer(retval);
     }
 
     return retval;
@@ -627,16 +600,11 @@ FPathFindingResult AGameGrid::RepathSolution(UFlowFieldSolutionLayer* InSolution
         const UGridTile* newgoaltile = InSolution->GetGoalTile();
         FVector dumbugtest = FVector();
 
-        if (InSolution->GetFlowVectorForTile(oldgoaltile, dumbugtest))
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Green, FString::Printf(TEXT("Repath Completed for Solution %d from Tile %d to Tile %d"), InSolution->GetLayerID(), oldgoaltile->GetTileID(), newgoaltile->GetTileID()));
-        }
-        else
+        if (!InSolution->GetFlowVectorForTile(oldgoaltile, dumbugtest))
         {
             GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Red, FString::Printf(TEXT("Repath Failed for Tile %d"), oldgoaltile->GetTileID()));
         }
     }
-
 
     return retval;
 }

@@ -14,6 +14,18 @@ void UFlowFieldSolutionLayer::SetGoalTile(const UGridTile* InTile, const bool bR
 	IntegrationLayer->SetGoalTile(InTile);
 }
 
+void UFlowFieldSolutionLayer::SetGoalLocation(const FVector& InMoveLocation, const bool bRebuildWeights)
+{
+	const UGridTile* goaltile = GetGameGrid()->GetTileFromLocation(InMoveLocation);
+
+	if (IsValid(goaltile))
+	{
+		Goallocation = InMoveLocation;
+		SetGoalTile(goaltile, bRebuildWeights);
+	}
+
+}
+
 void UFlowFieldSolutionLayer::SetGoalActor(const AActor* InGoalActor, const bool IsDynamicGoal, const bool bRebuildWeights)
 {
 	if (IsValid(InGoalActor))
@@ -111,6 +123,7 @@ bool UFlowFieldSolutionLayer::CanUseSolutionforQuery(const FVectorFieldQuery& Qu
 	}
 	else
 	{
+		/*Todo, allow for the creation of a copy solution if the endlocations arent the exact same.*/
 		const AGameGrid* grid = GetGameGrid();
 		const FVector endlocation = Query.EndLocation;
 		const UGridTile* goaltile = grid->GetTileFromLocation(endlocation);

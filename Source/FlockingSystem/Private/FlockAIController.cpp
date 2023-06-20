@@ -77,17 +77,6 @@ FPathFollowingRequestResult AFlockAIController::MoveTo(const FAIMoveRequest& Mov
 	return ResultData;
 }
 
-FAIRequestID AFlockAIController::RequestMove(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr Path)
-{
-	uint32 RequestID = FAIRequestID::InvalidRequest;
-	if (GetPathFollowingComponent())
-	{
-		RequestID = GetPathFollowingComponent()->RequestMove(MoveRequest, Path);
-	}
-
-	return RequestID;
-}
-
 void AFlockAIController::FindFieldForMoveRequest(const FAIMoveRequest& MoveRequest, FVectorFieldQuery& Query, FNavPathSharedPtr& OutPath) const
 {
 	UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
@@ -115,6 +104,7 @@ void AFlockAIController::SetGoalActor(AActor* InGoal)
 {
 	if (BlackboardComp != nullptr && InGoal != nullptr)
 	{
+		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("GoalActor Request to %s"), *InGoal->GetActorLocation().ToString()));
 		BlackboardComp->SetValueAsObject("GoalActor", InGoal);
 		BlackboardComp->ClearValue("GoalLocation");
 	}

@@ -352,7 +352,7 @@ void UFlockPathFollowingComponent::ApplyFlockSteering(FVector& InBaseVector)
 FVector UFlockPathFollowingComponent::GetFlockAgentLocation() const
 {
 	FVector retval = FVector::ZeroVector;
-	APawn * pawn = GetOwner<AAIController>()->GetPawn();
+	const APawn * pawn = GetOwner<AAIController>()->GetPawn();
 
 	if (pawn)
 	{
@@ -365,7 +365,7 @@ FVector UFlockPathFollowingComponent::GetFlockAgentLocation() const
 FVector UFlockPathFollowingComponent::GetFlockAgentDirection() const
 {
 	FVector retval = FVector::ZeroVector;
-	APawn* pawn = GetOwner<AAIController>()->GetPawn();
+	const APawn* pawn = GetOwner<AAIController>()->GetPawn();
 
 	if (pawn)
 	{
@@ -406,7 +406,7 @@ const TSet<const UObject*> UFlockPathFollowingComponent::GetFlockAgents() const
 float UFlockPathFollowingComponent::GetFlockAgentRadius() const
 {
 	float retval = 0.0f;
-	APawn* pawn = GetOwner<AAIController>()->GetPawn();
+	const APawn* pawn = GetOwner<AAIController>()->GetPawn();
 
 	if (pawn)
 	{

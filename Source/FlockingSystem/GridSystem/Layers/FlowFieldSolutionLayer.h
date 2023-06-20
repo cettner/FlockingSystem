@@ -22,6 +22,7 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 
 public:
 	void SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights = false);
+	void SetGoalLocation(const FVector& InMoveLocation, const bool bRebuildWeights = false);
 	void SetGoalActor(const AActor* InGoalActor, const bool IsDynamicGoal, const bool bRebuildWeights = false);
 	virtual bool BuildSolution();
 	virtual void ResetSolution();
@@ -32,16 +33,17 @@ public:
 	bool HasGoal() const;
 	FORCEINLINE bool IsGoalTile(const UGridTile * InGridTile) const;
 	FORCEINLINE bool IsGoalActor(const AActor* InGoalActor) const { return GoalActor == InGoalActor; }
-	virtual bool RequiresCostRebuild() const;
-	virtual bool RequiresWeightRebuild() const;
-	virtual bool IsSolutionReady() const;
-	virtual bool CanUseSolutionforQuery(const struct FVectorFieldQuery& Query) const;
-	FORCEINLINE bool GetFlowVectorForTile(const UGridTile * InTile, FVector& OutTile) const;
+	FORCEINLINE bool GetFlowVectorForTile(const UGridTile* InTile, FVector& OutTile) const;
 	FORCEINLINE bool GetWeightForTile(const UGridTile* InTile, float& Outweight) const;
 	FORCEINLINE const UGridTile* GetGoalTile() const;
 	FORCEINLINE bool IsGoalDynamic() const { return bIsGoalDynamic; };
 	FORCEINLINE virtual bool NeedsRepath() const;
 	FORCEINLINE const AActor* GetGoalActor() const { return GoalActor; }
+	virtual bool RequiresCostRebuild() const;
+	virtual bool RequiresWeightRebuild() const;
+	virtual bool IsSolutionReady() const;
+	virtual bool CanUseSolutionforQuery(const struct FVectorFieldQuery& Query) const;
+
 
 protected:
 	virtual void LayerInitialize(AGameGrid* InGrid, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator) override;
@@ -54,7 +56,6 @@ protected:
 	 
 protected:
 	/*Since Cost Data Exists in SuperTiles, we reassemble the cost data here from each of them*/
-	UPROPERTY(transient)
 	TMap<UGridTile*, uint8> CostMap = TMap<UGridTile*, uint8>();
 
 	UPROPERTY(transient)
@@ -68,6 +69,8 @@ protected:
 	bool bIsGoalDynamic = false;
 
 	const AActor* GoalActor = nullptr;
+
+	FVector Goallocation = FVector();
 
 	FVector LastUpdatedGoalPosition = FVector();
 

@@ -23,8 +23,6 @@ public:
 	FORCEINLINE const UGridTile* GetGoalTile() const { return GoalTile; }
 	FORCEINLINE bool IsGoalTile(const UGridTile* InTile) const { return GoalTile == InTile; }
 	void SetGoalTile(const UGridTile* InTile);
-	bool RemoveGoalTile(UGridTile * InTile, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
-	bool RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight = UNVISITED_TILE_WEIGHT, bool InRebuildifSuccessful = true);
 	bool DoesGoalExist() const;
 
 public:

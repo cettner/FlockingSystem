@@ -25,7 +25,7 @@ FVector UGridTile::GetTileCenter() const
 	return TileCenter;
 }
 
-TArray<FGridTileNeighbor> UGridTile::GetNeighbors() const
+const TArray<FGridTileNeighbor> UGridTile::GetNeighbors() const
 {
 	return Neighbors;
 }

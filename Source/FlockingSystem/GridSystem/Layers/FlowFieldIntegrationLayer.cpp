@@ -27,16 +27,6 @@ void UFlowFieldIntegrationLayer::SetGoalTile(const UGridTile* InTile)
 	}
 }
 
-bool UFlowFieldIntegrationLayer::RemoveGoalTile(UGridTile* InTile, float InReplacementWeight, bool InRebuildifSuccessful)
-{
-	return false;
-}
-
-bool UFlowFieldIntegrationLayer::RemoveGoalTile(TArray<UGridTile*> InTiles, float InReplacementWeight, bool InRebuildifSuccessful)
-{
-	return false;
-}
-
 bool UFlowFieldIntegrationLayer::DoesGoalExist() const
 {
 	const bool retval = GoalTile != nullptr;
@@ -133,8 +123,8 @@ void UFlowFieldIntegrationLayer::BuildWeights()
 				neighborcostfloat = static_cast<float>(neighborcost);
 				if (neighbors[i].bIsCornerNeighbor == true)
 				{
-					neighborweight += static_cast<float>(DOUBLE_UE_SQRT_2);
-					neighborcostfloat += static_cast<float>(DOUBLE_UE_SQRT_2);
+					neighborweight += UE_SQRT_2;
+					neighborcostfloat += UE_SQRT_2;
 				}
 
 				checkf(tilecheck, TEXT("UFlowFieldIntegrationLayer::BuildWeights : Invalid Tile retrieval for layer"))

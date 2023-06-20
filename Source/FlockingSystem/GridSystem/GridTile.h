@@ -93,7 +93,7 @@ public:
     bool IsTileValid() const;
     FORCEINLINE FVector GetTileCenter() const;
     FORCEINLINE FVector GetTileNormal() const;
-    TArray<FGridTileNeighbor> GetNeighbors() const;
+    const TArray<FGridTileNeighbor> GetNeighbors() const;
     void SetTileFillColor(const FLinearColor InColor);
     void SetTileVisible(const bool InIsVisible);
 
@@ -113,7 +113,6 @@ protected:
 
     FVector TileNormal = FVector();
 
-    UPROPERTY(Transient)
     TArray<FGridTileNeighbor> Neighbors = TArray<FGridTileNeighbor>();
 
     TSet<FLine> TileBounds = TSet<FLine>();

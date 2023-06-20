@@ -38,18 +38,12 @@ void AFlockingSystemPlayerController::SetupInputComponent()
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Completed, this, &AFlockingSystemPlayerController::OnSetDestinationReleased);
 		EnhancedInputComponent->BindAction(SetDestinationClickAction, ETriggerEvent::Canceled, this, &AFlockingSystemPlayerController::OnSetDestinationReleased);
 
-		EnhancedInputComponent->BindAction(MoveOtherClassClickAction, ETriggerEvent::Triggered, this, &AFlockingSystemPlayerController::OnMoveOtherClassTriggered);
+		EnhancedInputComponent->BindAction(MoveOtherClassClickAction, ETriggerEvent::Started, this, &AFlockingSystemPlayerController::OnMoveOtherClassTriggered);
 	}
 }
 
 void AFlockingSystemPlayerController::OnInputStarted()
 {
-	//StopMovement();
-}
-
-// Triggered every frame when the input is held down
-void AFlockingSystemPlayerController::OnSetDestinationTriggered()
-{	
 	// We look for the location in the world where the player has pressed the input
 	FHitResult Hit;
 	bool bHitSuccessful = GetHitResultUnderCursor(ECollisionChannel::ECC_WorldDynamic, true, Hit);
@@ -57,7 +51,7 @@ void AFlockingSystemPlayerController::OnSetDestinationTriggered()
 	UWorld* world = GetWorld();
 	for (TActorIterator<AFlockingSystemCharacter> ActorItr(world); ActorItr; ++ActorItr)
 	{
-		AFlockingSystemCharacter * found = *ActorItr;
+		AFlockingSystemCharacter* found = *ActorItr;
 
 		if (found->ActorHasTag("Left") && bHitSuccessful)
 		{
@@ -75,6 +69,12 @@ void AFlockingSystemPlayerController::OnSetDestinationTriggered()
 			UNiagaraFunctionLibrary::SpawnSystemAtLocation(this, FXCursor, Hit.Location, FRotator::ZeroRotator, FVector(1.f, 1.f, 1.f), true, true, ENCPoolMethod::None, true);
 		}
 	}
+}
+
+// Triggered every frame when the input is held down
+void AFlockingSystemPlayerController::OnSetDestinationTriggered()
+{	
+
 }
 
 void AFlockingSystemPlayerController::OnSetDestinationReleased()
