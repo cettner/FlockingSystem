@@ -34,6 +34,18 @@ protected:
 	int32 SolutionIndex = INVALID_LAYER_ID;
 };
 
+struct FSolutionRecalculationRequest
+{
+	UFlowFieldSolutionLayer * Solution;
+	ENavPathUpdateType::Type Reason;
+
+	FSolutionRecalculationRequest(UFlowFieldSolutionLayer * InPath, ENavPathUpdateType::Type InReason)
+		: Solution(InPath), Reason(InReason)
+	{}
+
+	bool operator==(const FSolutionRecalculationRequest& Other) const { return Solution == Other.Solution; }
+};
+
 
 UCLASS()
 class FLOCKINGSYSTEM_API AGameGrid : public ANavigationData
@@ -44,17 +56,18 @@ protected:
 	AGameGrid();
 
 public:
-	virtual int32 GetMaxTiles() const;
-	virtual int32 GetMaxRows() const;
-	virtual int32 GetMaxCols() const;
-	const TArray<UGridTile*>& GetTiles() const { return GridData; }
-	virtual EGridTileType GetTileShape() const;
+	int32 GetMaxTiles() const;
+	FORCEINLINE int32 GetMaxRows() const;
+	FORCEINLINE int32 GetMaxCols() const;
+	const TArray<UGridTile*>& GetTiles() const { return GridData; };
 	virtual float GetTileRadius() const;
 	virtual float GetTileEdgeLength() const;
+	float GetGridWidth() const;
+	float GetGridLength() const;
 	virtual bool IsValidGridLocation(const FVector& InLocation) const;
 	virtual void SetTileVisible(int32 TileID, bool bIsVisble) const;
 	virtual void SetTileColor(int32 TileID, FLinearColor InTileColor);
-	virtual UGridTile* GetTileFromLocation(const FVector& InLocation) const;
+	UGridTile* GetTileFromLocation(const FVector& InLocation) const;
 	
 	template<typename T>
 	T* GetLayerOfClass() const
@@ -102,22 +115,26 @@ public:
 	}
 
 public:
-	virtual UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator = nullptr, const bool InbDelayActivation = false);
-	virtual bool RemoveGridLayer(UGridLayer* InLayerToRemove);
-	virtual void FinishLayerActivation(UGridLayer * InLayer);
-	virtual void SetActiveLayer(UGridLayer* InLayer);
+	UGridLayer* AddGridLayer(TSubclassOf<UGridLayer> InLayerClass, const TArray<UGridTile*>& InActiveTiles, AActor* InApplicator = nullptr, const bool InbDelayActivation = false);
+	bool RemoveGridLayer(UGridLayer* InLayerToRemove);
+	void FinishLayerActivation(UGridLayer * InLayer);
+	void SetActiveLayer(UGridLayer* InLayer);
 
+public:
 	FORCEINLINE FPathFindingResult FindPath(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query) const
 	{
 		check(FindVectorFieldImplementation);
 		// this awkward implementation avoids virtual call overhead - it's possible this function will be called a lot
 		return (*FindVectorFieldImplementation)(AgentProperties, Query);
 	}
+	int32 RegisterObserveredSolution(UFlowFieldSolutionLayer * InObservedPath);
+	bool UnRegisterObservationSolution(UFlowFieldSolutionLayer* InObservedPath);
 
 protected:
 	virtual void DrawGridLines();
 	virtual void DrawGridTiles();
 	virtual bool BuildGridData();
+	virtual void ComputeGridConstants();
 	virtual void AddTileNeighbors();
 	virtual void InitializeLayers();
 	virtual bool DetermineTileLocation(const int32 InRow, const int32 InCol, FVector& OutTileCenter) const;
@@ -135,8 +152,8 @@ protected:
 	UFlowFieldSolutionLayer* GetSolutionFromQuery(const FVectorFieldQuery& Query) const;
 	UFlowFieldSolutionLayer* BuildSolutionFromQuery(const FVectorFieldQuery& Query);
 	FPathFindingResult RepathSolution(UFlowFieldSolutionLayer* InSolution, ENavPathUpdateType::Type InRepathReason);
-
 	virtual void TickActor(float DeltaTime, enum ELevelTick TickType, FActorTickFunction& ThisTickFunction) override;
+	void PurgeUnusedSolutions();
 	/*End Navigation*/
 protected:
 	virtual void PreInitializeComponents() override;
@@ -152,9 +169,6 @@ protected:
 	/*Width of Drawn Line*/
 	UPROPERTY(EditAnywhere, Category = "Setup")
 	float GridLineThickness = 10.0f;
-
-	UPROPERTY(EditAnywhere, Category = "Setup")
-	TEnumAsByte<EGridTileType> TileShape = EGridTileType::SQUARE;
 
 	/*Tile Radius*/
 	UPROPERTY(EditAnywhere, Category = "Setup")
@@ -193,6 +207,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Setup")
 	TArray<TSubclassOf<UGridLayer>> StartupLayers = TArray<TSubclassOf<UGridLayer>>();
 
+	/*Runtime*/
 protected:
 	UPROPERTY(Transient)
 	TArray<UGridTile*> GridData = TArray<UGridTile*>();
@@ -207,11 +222,16 @@ protected:
 
 	UProceduralMeshComponent* SelectionProceduralMesh = nullptr;
 
+	int32 NumRows = 0;
+	int32 NumColomns = 0;
+	float TileRadius = 0.0f;
 
 protected:
 	typedef FPathFindingResult(*FFindVFieldPtr)(const FNavAgentProperties& AgentProperties, const FVectorFieldQuery& Query);
 	FFindVFieldPtr FindVectorFieldImplementation;
 
+	TArray<UFlowFieldSolutionLayer *> ObservedSolutions;
+	TArray<FSolutionRecalculationRequest> SolutionRepathRequests;
 
 #ifdef WITH_EDITOR
 

@@ -21,7 +21,7 @@ public:
 
 public:
 	bool IsDynamicGoal = false;
-	FORCEINLINE const AActor* GetGoalActor() const { TargetGoalActor; }
+	FORCEINLINE const AActor* GetGoalActor() const { return TargetGoalActor; }
 	FORCEINLINE void SetGoalActor(const AActor* InActor) { TargetGoalActor = InActor; }
 	FORCEINLINE bool IsGoalActor() const { return TargetGoalActor != nullptr; }
 

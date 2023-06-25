@@ -39,6 +39,7 @@ public:
 	FORCEINLINE bool IsGoalDynamic() const { return bIsGoalDynamic; };
 	FORCEINLINE virtual bool NeedsRepath() const;
 	FORCEINLINE const AActor* GetGoalActor() const { return GoalActor; }
+	FORCEINLINE const FVector GetGoalLocation() const;
 	virtual bool RequiresCostRebuild() const;
 	virtual bool RequiresWeightRebuild() const;
 	virtual bool IsSolutionReady() const;
@@ -50,6 +51,7 @@ protected:
 	virtual void OnCostLayerRebuilt(UFlowFieldCostLayer * InRebuiltLayer);
 	virtual bool InitializeCostData();
 	virtual void OnLayerActivate() override;
+	virtual uint32 OnLayerDeactivate() override;
 	virtual void OnShowLayer() override;
 	virtual void OnHideLayer() override;
 

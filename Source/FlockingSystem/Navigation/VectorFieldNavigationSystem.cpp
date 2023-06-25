@@ -69,7 +69,6 @@ FPathFindingResult UVectorFieldNavigationSystem::FindVectorFieldPathSync(FVector
 
 void UVectorFieldNavigationSystem::Tick(float DeltaSeconds)
 {
-	int debug = 9;
 }
 
 void UVectorFieldNavigationSystem::CleanUp(const FNavigationSystem::ECleanupMode Mode)

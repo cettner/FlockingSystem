@@ -10,14 +10,6 @@
 
 constexpr int32 INVALID_TILE_ID = 0xFFFFFFFF;
 
-UENUM()
-enum EGridTileType
-{
-    TRIANGLE,
-    SQUARE,
-    HEXAGON
-};
-
 USTRUCT()
 struct FGridTileNeighbor
 {

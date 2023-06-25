@@ -10,7 +10,6 @@
 
 void UFlowFieldSolutionLayer::SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, FString::Printf(TEXT("GoalTile Set Request %d"), InTile->GetTileID()));
 	IntegrationLayer->SetGoalTile(InTile);
 }
 
@@ -30,14 +29,14 @@ void UFlowFieldSolutionLayer::SetGoalActor(const AActor* InGoalActor, const bool
 {
 	if (IsValid(InGoalActor))
 	{
-		const UGridTile* goaltile = GetGameGrid()->GetTileFromLocation(InGoalActor->GetActorLocation());
+		GoalActor = InGoalActor;
+		LastUpdatedGoalPosition = InGoalActor->GetActorLocation();
+		bIsGoalDynamic = IsDynamicGoal;
+		SetGoalLocation(InGoalActor->GetActorLocation(), bRebuildWeights);
 
-		if (goaltile != nullptr)
+		if (bIsGoalDynamic)
 		{
-			GoalActor = InGoalActor;
-			LastUpdatedGoalPosition = InGoalActor->GetActorLocation();
-			bIsGoalDynamic = IsDynamicGoal;
-			SetGoalTile(goaltile, bRebuildWeights);
+			GetGameGrid()->RegisterObserveredSolution(this);
 		}
 	}
 }
@@ -98,6 +97,17 @@ bool UFlowFieldSolutionLayer::BuildSolution()
 	return retval;
 }
 
+const FVector UFlowFieldSolutionLayer::GetGoalLocation() const
+{
+	FVector retval = Goallocation;
+	const AActor* goalactor = GetGoalActor();
+	if (IsValid(goalactor))
+	{
+		retval = goalactor->GetActorLocation();
+	}
+	return retval;
+}
+
 bool UFlowFieldSolutionLayer::RequiresCostRebuild() const
 {
 	return bNeedsCostRebuild;
@@ -119,7 +129,9 @@ bool UFlowFieldSolutionLayer::CanUseSolutionforQuery(const FVectorFieldQuery& Qu
 
 	if (Query.IsGoalActor())
 	{
-		retval = GetGoalActor() == Query.GetGoalActor();
+		const AActor* actor = GetGoalActor();
+		const AActor * otheractor = Query.GetGoalActor();
+		retval = actor == otheractor;
 	}
 	else
 	{
@@ -167,8 +179,10 @@ bool UFlowFieldSolutionLayer::NeedsRepath() const
 		{
 			const FVector goalposition = Cast<INavAgentInterface>(goalactor) ? Cast<INavAgentInterface>(goalactor)->GetNavAgentLocation() : goalactor->GetActorLocation();
 			const float dissquared = FVector::DistSquared(goalposition, LastUpdatedGoalPosition);
+			const UGridTile * tile = GetGameGrid()->GetTileFromLocation(goalposition);
 
-			if (dissquared >= FMath::Square(RepathTetherDistance))
+
+			if (!IsGoalTile(tile) && (dissquared >= FMath::Square(RepathTetherDistance)))
 			{
 				retval = true;
 			}
@@ -215,6 +229,18 @@ bool UFlowFieldSolutionLayer::InitializeCostData()
 void UFlowFieldSolutionLayer::OnLayerActivate()
 {
 	BuildSolution();
+}
+
+uint32 UFlowFieldSolutionLayer::OnLayerDeactivate()
+{
+	uint32 retval = Super::OnLayerDeactivate();
+
+	if (IsGoalDynamic())
+	{
+		GetGameGrid()->UnRegisterObservationSolution(this);
+	}
+
+	return retval;
 }
 
 void UFlowFieldSolutionLayer::OnShowLayer()

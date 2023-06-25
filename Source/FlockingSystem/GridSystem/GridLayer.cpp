@@ -35,7 +35,7 @@ uint32 UGridLayer::OnLayerDeactivate()
 		RemoveTile(ActiveTiles[i]);
 		retval++;
 	}
-
+	bIsLayerActivated = false;
 	return retval;
 }
 

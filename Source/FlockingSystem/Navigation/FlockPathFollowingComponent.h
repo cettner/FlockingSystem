@@ -80,13 +80,15 @@ class UFlockPathFollowingComponent : public UPathFollowingComponent, public IFlo
 	protected:
 		/*Map Correlating an obstacle and the angles it was struck from relative to the current flowfields intended direction*/
 		FObstacleScan ScannedObstacles;
-		FVector PreviousObstacleSteeringForce = FVector::ZeroVector;
+		FVector PreviousMovement = FVector::ZeroVector;
 
 		const UGridTile* CurrentTile = nullptr;
 		const UGridTile* PreviousTile = nullptr;
 		const UGridTile* SteeringTile = nullptr;
 		bool bIsUsingSteering = false;
-
+		
+		int32 SteeringTileAttemptMoves = 0;
+		int32 MaxSteeringAttempts = 50;
 
 		TSet<const UObject*> FlockAgents = TSet<const UObject*>();
 

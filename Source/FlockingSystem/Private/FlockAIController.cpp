@@ -31,8 +31,6 @@ void AFlockAIController::OnPossess(APawn* InPawn)
 		BlackboardComp->InitializeBlackboard(*Minion->BehaviorTree->BlackboardAsset);
 		BehaviorComp->StartTree(*Minion->BehaviorTree);
 	}
-
-	
 }
 
 FPathFollowingRequestResult AFlockAIController::MoveTo(const FAIMoveRequest& MoveRequest, FNavPathSharedPtr* OutPath)
@@ -40,8 +38,7 @@ FPathFollowingRequestResult AFlockAIController::MoveTo(const FAIMoveRequest& Mov
 	FPathFollowingRequestResult ResultData;
 	ResultData.Code = EPathFollowingRequestResult::Failed;
 
-	bool bCanRequestMove = true;
-	const bool bAlreadyAtGoal = bCanRequestMove && GetPathFollowingComponent()->HasReached(MoveRequest);
+	const bool bAlreadyAtGoal = GetPathFollowingComponent()->HasReached(MoveRequest);
 
 	if (bAlreadyAtGoal)
 	{
@@ -88,11 +85,6 @@ void AFlockAIController::FindFieldForMoveRequest(const FAIMoveRequest& MoveReque
 		{
 			if (PathResult.IsSuccessful() && PathResult.Path.IsValid())
 			{
-				if (MoveRequest.IsMoveToActorRequest())
-				{
-					PathResult.Path->SetGoalActorObservation(*MoveRequest.GetGoalActor(), 100.0f);
-				}
-
 				PathResult.Path->EnableRecalculationOnInvalidation(true);
 				OutPath = PathResult.Path;
 			}
@@ -104,7 +96,6 @@ void AFlockAIController::SetGoalActor(AActor* InGoal)
 {
 	if (BlackboardComp != nullptr && InGoal != nullptr)
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Blue, FString::Printf(TEXT("GoalActor Request to %s"), *InGoal->GetActorLocation().ToString()));
 		BlackboardComp->SetValueAsObject("GoalActor", InGoal);
 		BlackboardComp->ClearValue("GoalLocation");
 	}
@@ -124,9 +115,8 @@ bool AFlockAIController::BuildPathfindingQuery(const FAIMoveRequest& MoveRequest
 {
 	bool bResult = false;
 
-	UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
+	const UVectorFieldNavigationSystem* NavSys = FNavigationSystem::GetCurrent<UVectorFieldNavigationSystem>(GetWorld());
 	const AGameGrid* NavData = (NavSys == nullptr) ? nullptr : Cast<AGameGrid>(NavSys->GetNavDataForProps(GetNavAgentPropertiesRef(), GetNavAgentLocation()));
-
 
 	if (NavData)
 	{

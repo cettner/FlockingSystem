@@ -53,30 +53,27 @@ void UGridTile::SetupTile(const int32 InID, const FVector InTileCenter)
 	if (IsTileValid())
 	{
 		const AGameGrid* grid = GetGameGrid();
-		const EGridTileType tileshape = grid->GetTileShape();
 		const float edgelength = grid->GetTileEdgeLength();
 		const FVector tilecenter = GetTileCenter();
 
-		if (tileshape == EGridTileType::SQUARE)
-		{
-			const float gridheight = tilecenter.Z;
-			const float offset = edgelength * .5f;
-			const FVector p1 = tilecenter + FVector(-offset, offset, gridheight);
-			const FVector p2 = tilecenter + FVector(offset, offset, gridheight);
-			const FVector p3 = tilecenter + FVector(-offset, -offset, gridheight);
-			const FVector p4 = tilecenter + FVector(offset, -offset, gridheight);
+		const float gridheight = tilecenter.Z;
+		const float offset = edgelength * .5f;
+		const FVector p1 = tilecenter + FVector(-offset, offset, gridheight);
+		const FVector p2 = tilecenter + FVector(offset, offset, gridheight);
+		const FVector p3 = tilecenter + FVector(-offset, -offset, gridheight);
+		const FVector p4 = tilecenter + FVector(offset, -offset, gridheight);
 
-			TileBounds.Add(FLine(p1, p2));
-			TileBounds.Add(FLine(p2, p4));
-			TileBounds.Add(FLine(p4, p3));
-			TileBounds.Add(FLine(p3, p1));
+		TileBounds.Add(FLine(p1, p2));
+		TileBounds.Add(FLine(p2, p4));
+		TileBounds.Add(FLine(p4, p3));
+		TileBounds.Add(FLine(p3, p1));
 
-			/*Calculate vectors to compute the normal*/
-			const FVector v1 = p2 - tilecenter;
-			const FVector v2 = p4 - tilecenter;
-			TileNormal = v2.Cross(v1);
-			TileNormal.Normalize();
-		}
+		/*Calculate vectors to compute the normal*/
+		const FVector v1 = p2 - tilecenter;
+		const FVector v2 = p4 - tilecenter;
+		TileNormal = v2.Cross(v1);
+		TileNormal.Normalize();
+
 	}
 }
 

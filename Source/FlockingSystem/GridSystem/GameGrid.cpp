@@ -10,57 +10,57 @@
 
 AGameGrid::AGameGrid() : Super()
 {
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root Component"));
+    
     LinesProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Grid Line Drawing Component"));
+    LinesProceduralMesh->SetupAttachment(RootComponent);
+
     SelectionProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("Tile Drawing Component"));
+    SelectionProceduralMesh->SetupAttachment(RootComponent);
 
     FindVectorFieldImplementation = FindVectorField;
 }
 
 int32 AGameGrid::GetMaxTiles() const
 {
-    int32 retval = 0U;
-    if (TileShape == EGridTileType::SQUARE)
-    {
-        const int32 numRows = GetMaxRows();
-        const int32 numCols = GetMaxCols();
-        retval = numRows * numCols;
-    }
-    else if (TileShape == EGridTileType::HEXAGON)
-    {
-        const int32 numRows = GetMaxRows();
-        const int32 numCols = GetMaxCols();
-        retval = (numCols * (numRows + 1)) / 2;
-    }
+    const int32 numRows = GetMaxRows();
+    const int32 numCols = GetMaxCols();
+    const int32 retval = numRows * numCols;
 
     return retval;
 }
 
 int32 AGameGrid::GetMaxRows() const
 {
-    const int32 retval = FMath::FloorToInt(GridLength / TileEdgeLength);
-    return retval;
+    return NumRows;
 }
 
 int32 AGameGrid::GetMaxCols() const
 {
-    const int32 retval = FMath::FloorToInt(GridWidth / TileEdgeLength);
-    return retval;
-}  
 
-EGridTileType AGameGrid::GetTileShape() const
-{
-    return TileShape;
-}
+    return NumColomns;
+}  
 
 float AGameGrid::GetTileRadius() const
 {
-    //todo update for hex and triangles
-    return TileEdgeLength / UE_SQRT_2;
+    return TileRadius;
 }
 
 float AGameGrid::GetTileEdgeLength() const
 {
     return TileEdgeLength;
+}
+
+float AGameGrid::GetGridWidth() const
+{
+    const float retval = GetMaxCols() * TileEdgeLength;
+    return retval;
+}
+
+float AGameGrid::GetGridLength() const
+{
+    const float retval = GetMaxRows() * TileEdgeLength;
+    return retval;
 }
 
 bool AGameGrid::IsValidGridLocation(const FVector& InLocation) const
@@ -167,6 +167,47 @@ void AGameGrid::SetActiveLayer(UGridLayer* InLayer)
 
 void AGameGrid::DrawGridLines()
 {
+    TArray<int> LineTriangles = TArray<int>();
+    TArray<FVector> LineVerticies = TArray<FVector>();
+
+    if (GridMaterial)
+    {
+        UMaterialInstanceDynamic* linematerial = UMaterialInstanceDynamic::Create(GridMaterial, this);
+
+        linematerial->SetVectorParameterValue(ColorParameterName, LineColor);
+        linematerial->SetScalarParameterValue(OpacityParameterName, LineOpacity);
+
+
+        /*Obtain Horizontal Line Data*/
+        for (int i = 0; i <= GetMaxRows(); i++)
+        {
+            float linestartpos = i * TileEdgeLength;
+            FVector LineStart = FVector(linestartpos, 0.0f, 0.0f);
+            FVector LineEnd = FVector(linestartpos, GetGridWidth(), 0.0f);
+
+            BuildLineRenderData(LineStart, LineEnd, GridLineThickness, LineVerticies, LineTriangles);
+        }
+
+        /*Obtain Verticle Lines Data*/
+        for (int i = 0; i <= GetMaxCols(); i++)
+        {
+            float linestartpos = i * TileEdgeLength;
+            FVector LineStart = FVector(0.0f, linestartpos, 0.0f);
+            FVector LineEnd = FVector(GetGridLength(), linestartpos, 0.0f);
+
+            BuildLineRenderData(LineStart, LineEnd, GridLineThickness, LineVerticies, LineTriangles);
+        }
+
+
+        if (LinesProceduralMesh)
+        {
+            LinesProceduralMesh->CreateMeshSection(0, LineVerticies, LineTriangles, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+            LinesProceduralMesh->SetMaterial(0, linematerial);
+        }
+    }
+
+
+    /*
     TSet<FLine> gridlines = TSet<FLine>();
     for (int i = 0; i < GridData.Num(); i++)
     {
@@ -194,49 +235,47 @@ void AGameGrid::DrawGridLines()
         LinesProceduralMesh->SetMaterial(sectionid, linematerial);
         sectionid++;
     }
-
+    */
 }
 
 void AGameGrid::DrawGridTiles()
 {
     for (int32 i = 0; i < GridData.Num(); i++)
     {
-        TArray<FVector> selectedverts = TArray<FVector>();
-        TArray<int> selectedtris = TArray<int>();
-        UGridTile * currenttile = GridData[i];
-        
-        if (TileShape == EGridTileType::SQUARE)
-        {
-            const FVector tilecenter = currenttile->GetTileCenter();
-            const float halfwidth = TileEdgeLength * .5f;
-            const FVector gridfv = GetActorForwardVector();
-
-            FVector selectstart = tilecenter + (gridfv * halfwidth);
-            FVector selectend = tilecenter - (gridfv * halfwidth);
-
-            /*Draw a single fat "Line" with the width the size of the Tile*/
-            BuildLineRenderData(selectstart, selectend, TileEdgeLength, selectedverts, selectedtris);
-
-
-            if (SelectionProceduralMesh && GridMaterial)
-            {
-                const int32 tileid = currenttile->GetTileID();
-                UMaterialInstanceDynamic* selectionmaterial = UMaterialInstanceDynamic::Create(GridMaterial, this);
-                selectionmaterial->SetVectorParameterValue(ColorParameterName, DefaultTileFillColor);
-                selectionmaterial->SetScalarParameterValue(OpacityParameterName, DefaultTileFillOpacity);
-
-                SelectionProceduralMesh->CreateMeshSection(tileid, selectedverts, selectedtris, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
-                SelectionProceduralMesh->SetMaterial(tileid, selectionmaterial);
-                SelectionProceduralMesh->SetMeshSectionVisible(tileid, false);
-            }
-        }
+       TArray<FVector> selectedverts = TArray<FVector>();
+       TArray<int> selectedtris = TArray<int>();
+       const UGridTile * currenttile = GridData[i];
+     
+       const FVector tilecenter = currenttile->GetTileCenter();
+       const float halfwidth = TileEdgeLength * .5f;
+       const FVector gridfv = GetActorForwardVector();
+       /*"shrink" the drawn tiles length and width so that the tile fits inside the gridlines instead of overlaps*/
+       const FVector lengthadjustment = gridfv * GridLineThickness * .5f;
+       const float widthadjustment = TileEdgeLength - GridLineThickness;
+       const FVector selectstart = tilecenter + (gridfv * halfwidth) - lengthadjustment;
+       const FVector selectend = tilecenter - (gridfv * halfwidth) + lengthadjustment;
+       
+       /*Draw a single fat "Line" with the width the size of the Tile*/
+       BuildLineRenderData(selectstart, selectend, widthadjustment, selectedverts, selectedtris);
+       
+       if (SelectionProceduralMesh && GridMaterial)
+       {
+           const int32 tileid = currenttile->GetTileID();
+           UMaterialInstanceDynamic* selectionmaterial = UMaterialInstanceDynamic::Create(GridMaterial, this);
+           selectionmaterial->SetVectorParameterValue(ColorParameterName, DefaultTileFillColor);
+           selectionmaterial->SetScalarParameterValue(OpacityParameterName, DefaultTileFillOpacity);
+       
+           SelectionProceduralMesh->CreateMeshSection(tileid, selectedverts, selectedtris, TArray<FVector>(), TArray<FVector2D>(), TArray<FColor>(), TArray<FProcMeshTangent>(), false);
+           SelectionProceduralMesh->SetMaterial(tileid, selectionmaterial);
+           SelectionProceduralMesh->SetMeshSectionVisible(tileid, false);
+       }
     }
 }
 
 bool AGameGrid::BuildGridData()
 {
 	bool retval = true;
-    
+    ComputeGridConstants();
     // Clear previous data todo: actually delete the tiles / do better cleanup
     GridData.Empty();
 
@@ -266,6 +305,13 @@ bool AGameGrid::BuildGridData()
 	return retval;
 }
 
+void AGameGrid::ComputeGridConstants()
+{
+    NumRows = FMath::FloorToInt(GridLength / TileEdgeLength);
+    NumColomns = FMath::FloorToInt(GridWidth / TileEdgeLength);
+    TileRadius = TileEdgeLength / UE_SQRT_2;
+}
+
 void AGameGrid::AddTileNeighbors()
 {
     const int32 numrows = GetMaxRows();
@@ -277,84 +323,47 @@ void AGameGrid::AddTileNeighbors()
         const int32 row = i / numcols;
         UGridTile* currenttile = GridData[i];
 
-
-        if (TileShape == EGridTileType::SQUARE)
+        // Top Neighbor
+        if (row < (numrows - 1))
         {
-            // Top Neighbor
-            if (row < (numrows - 1))
-            {
-                currenttile->AddNeighbor(GridData[i + numcols]);
+            currenttile->AddNeighbor(GridData[i + numcols]);
 
-                //topright corner neighbor
-                if (col < numcols - 1)
-                {
-                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols + 1], true));
-                }
-                //topleft corner neighbor
-                if (col > 0)
-                {
-                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols - 1], true));
-                }
-            }
-            // Check bottom neighbor
-            if (row > 0)
-            {
-                currenttile->AddNeighbor(GridData[i - numcols]);
-                
-                //bottom right corner neighbor
-                if (col < numcols - 1)
-                {
-                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols + 1], true));
-                }
-                //bottomleft corner neighbor
-                if (col > 0)
-                {
-                    currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols - 1], true));
-                }
-            }
-            // Check left neighbor
-            if (col > 0)
-            {
-                currenttile->AddNeighbor(GridData[i - 1]);
-            }
-            // Check right neighbor
+            //topright corner neighbor
             if (col < numcols - 1)
             {
-                currenttile->AddNeighbor(GridData[i + 1]);
+                currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols + 1], true));
+            }
+            //topleft corner neighbor
+            if (col > 0)
+            {
+                currenttile->AddNeighbor(FGridTileNeighbor(GridData[i + numcols - 1], true));
             }
         }
-        else if (TileShape == EGridTileType::HEXAGON)
+        // Check bottom neighbor
+        if (row > 0)
         {
-            // Check top-left neighbor
-            if (row > 0 && col > 0)
-            {
-                currenttile->AddNeighbor(GridData[i - numcols - 1]);
-            }
-            // Check top-right neighbor
-            if (row > 0 && col < numcols - 1)
-            {
-                currenttile->AddNeighbor(GridData[i - numcols + 1]);
-            }
-            // Check bottom-left neighbor
-            if (row < numrows - 1 && col > 0)
-            {
-                currenttile->AddNeighbor(GridData[i + numcols - 1]);
-            }
-            // Check bottom-right neighbor
-            if (row < numrows - 1 && col < numcols - 1)
-            {
-                currenttile->AddNeighbor(GridData[i + numcols + 1]);
-            }
-            // Check left neighbor
-            if (col > 0)
-            {
-                currenttile->AddNeighbor(GridData[i - 1]);
-            }
-            // Check right neighbor
+            currenttile->AddNeighbor(GridData[i - numcols]);
+            
+            //bottom right corner neighbor
             if (col < numcols - 1)
             {
-                currenttile->AddNeighbor(GridData[i + 1]);
+                currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols + 1], true));
             }
+            //bottomleft corner neighbor
+            if (col > 0)
+            {
+                currenttile->AddNeighbor(FGridTileNeighbor(GridData[i - numcols - 1], true));
+            }
+        }
+        // Check left neighbor
+        if (col > 0)
+        {
+            currenttile->AddNeighbor(GridData[i - 1]);
+        }
+        // Check right neighbor
+        if (col < numcols - 1)
+        {
+            currenttile->AddNeighbor(GridData[i + 1]);
         }
     }
 }
@@ -406,23 +415,12 @@ bool AGameGrid::DetermineTileLocation(const int32 InRow, const int32 InCol, FVec
 {
     const FVector actorlocation = GetActorLocation();
 
-    // Determine the shape of the tile
-    if (TileShape == EGridTileType::SQUARE)
-    {
-        const float halfedgelength = (0.5f * TileEdgeLength);
-        OutTileCenter.X = actorlocation.X + (InRow * TileEdgeLength) + halfedgelength;
-        OutTileCenter.Y = actorlocation.Y + (InCol * TileEdgeLength) + halfedgelength;
-        OutTileCenter.Z = actorlocation.Z;
-    }
-    else if (TileShape == EGridTileType::HEXAGON)
-    {
-        // Calculate the distance between the center of each hexagon in the x and y direction
-        const float xSpacing = (3.0f / 2.0f) * TileEdgeLength;
-        const float ySpacing = TileEdgeLength * FMath::Sqrt(3.0f);
+    const float halfedgelength = (0.5f * TileEdgeLength);
+    OutTileCenter.X = actorlocation.X + (InRow * TileEdgeLength) + halfedgelength;
+    OutTileCenter.Y = actorlocation.Y + (InCol * TileEdgeLength) + halfedgelength;
+    OutTileCenter.Z = actorlocation.Z;
 
-      //  OutTileCenter = actorlocation + FVector(x * xSpacing, y * ySpacing, 0);
-    }
-    bool retval = IsValidGridLocation(OutTileCenter);
+    const bool retval = IsValidGridLocation(OutTileCenter);
 
     return retval;
 }
@@ -609,59 +607,64 @@ FPathFindingResult AGameGrid::RepathSolution(UFlowFieldSolutionLayer* InSolution
     return retval;
 }
 
+void AGameGrid::PurgeUnusedSolutions()
+{
+
+}
+
+int32 AGameGrid::RegisterObserveredSolution(UFlowFieldSolutionLayer * InObservedPath)
+{
+    int32 retval = INDEX_NONE;
+    if (ObservedSolutions.Num() == 0)
+    {
+        NextObservedPathsTickInSeconds = ObservedPathsTickInterval;
+    }
+    if (IsValid(InObservedPath))
+    {
+        retval = ObservedSolutions.AddUnique(InObservedPath);
+    }
+    return retval;
+}
+
+bool AGameGrid::UnRegisterObservationSolution(UFlowFieldSolutionLayer* InObservedPath)
+{
+    return ObservedSolutions.Remove(InObservedPath) > (int32)0;
+}
+
 void AGameGrid::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFunction& ThisTickFunction)
 {
-    PurgeUnusedPaths();
-
-    // INC_DWORD_STAT_BY(STAT_Navigation_ObservedPathsCount, ObservedPaths.Num());
-
     if (NextObservedPathsTickInSeconds >= 0.f)
     {
         NextObservedPathsTickInSeconds -= DeltaTime;
         if (NextObservedPathsTickInSeconds <= 0.f)
         {
-            RepathRequests.Reserve(ObservedPaths.Num());
+            SolutionRepathRequests.Reserve(ObservedSolutions.Num());
 
-            for (int32 PathIndex = ObservedPaths.Num() - 1; PathIndex >= 0; --PathIndex)
+            for (int32 PathIndex = ObservedSolutions.Num() - 1; PathIndex >= 0; --PathIndex)
             {
-                if (ObservedPaths[PathIndex].IsValid())
+                if (IsValid(ObservedSolutions[PathIndex]))
                 {
-                    FNavPathSharedPtr SharedPath = ObservedPaths[PathIndex].Pin();
-                    FNavigationPath* Path = SharedPath.Get();
-                    EPathObservationResult::Type Result = Path->TickPathObservation();
-                    switch (Result)
+                    UFlowFieldSolutionLayer * solution = ObservedSolutions[PathIndex];
+                   
+                    if (solution->NeedsRepath())
                     {
-                    case EPathObservationResult::NoLongerObserving:
-                        ObservedPaths.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
-                        break;
-
-                    case EPathObservationResult::NoChange:
-                        // do nothing
-                        break;
-
-                    case EPathObservationResult::RequestRepath:
-                        RepathRequests.Add(FNavPathRecalculationRequest(SharedPath, ENavPathUpdateType::GoalMoved));
-                        break;
-
-                    default:
-                        check(false && "unhandled EPathObservationResult::Type in ANavigationData::TickActor");
-                        break;
+                        SolutionRepathRequests.Emplace(FSolutionRecalculationRequest(solution, ENavPathUpdateType::GoalMoved));
                     }
                 }
                 else
                 {
-                    ObservedPaths.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
+                    ObservedSolutions.RemoveAtSwap(PathIndex, 1, /*bAllowShrinking=*/false);
                 }
             }
 
-            if (ObservedPaths.Num() > 0)
+            if (ObservedSolutions.Num() > 0)
             {
                 NextObservedPathsTickInSeconds = ObservedPathsTickInterval;
             }
         }
     }
 
-    if (RepathRequests.Num() > 0)
+    if (SolutionRepathRequests.Num() > 0)
     {
         float TimeStamp = GetWorldTimeStamp();
         const UWorld* World = GetWorld();
@@ -670,57 +673,32 @@ void AGameGrid::TickActor(float DeltaTime, ELevelTick TickType, FActorTickFuncti
 
         const int32 MaxProcessedRequests = 1000;
 
-        // make a copy of path requests and reset (remove up to MaxProcessedRequests) from navdata's array
-        // this allows storing new requests in the middle of loop (e.g. used by meta path corrections)
-
-        TArray<FNavPathRecalculationRequest> WorkQueue(RepathRequests);
-        if (WorkQueue.Num() > MaxProcessedRequests)
+        for (int32 Idx = 0; Idx < SolutionRepathRequests.Num(); Idx++)
         {
-            WorkQueue.RemoveAt(MaxProcessedRequests, WorkQueue.Num() - MaxProcessedRequests);
-            RepathRequests.RemoveAt(0, MaxProcessedRequests);
-        }
-        else
-        {
-            RepathRequests.Reset();
-        }
-
-        for (int32 Idx = 0; Idx < WorkQueue.Num(); Idx++)
-        {
-            FNavPathRecalculationRequest& RecalcRequest = WorkQueue[Idx];
+            FSolutionRecalculationRequest& RecalcRequest = SolutionRepathRequests[Idx];
 
             // check if it can be updated right now
-            FNavPathSharedPtr PinnedPath = RecalcRequest.Path.Pin();
-            if (PinnedPath.IsValid() == false)
+            UFlowFieldSolutionLayer * PinnedPath = RecalcRequest.Solution;
+            if (!IsValid(PinnedPath))
             {
                 continue;
             }
-
-            FVectorFieldPath* path = PinnedPath->CastPath<FVectorFieldPath>();
-            int32 id = path->GetSolutionID();
-            UFlowFieldSolutionLayer* solution = GetLayerByIndex<UFlowFieldSolutionLayer>(id);
-
-            const FPathFindingResult Result = RepathSolution(solution, ENavPathUpdateType::GoalMoved);
-
-
+            const FPathFindingResult Result = RepathSolution(PinnedPath, RecalcRequest.Reason);
 
             // update time stamp to give observers any means of telling if it has changed
-            PinnedPath->SetTimeStamp(TimeStamp);
+            //PinnedPath->SetTimeStamp(TimeStamp);
 
             // partial paths are still valid and can change to full path when moving goal gets back on navmesh
             if (Result.IsSuccessful() || Result.IsPartial())
             {
-                PinnedPath->UpdateLastRepathGoalLocation();
-                PinnedPath->DoneUpdating(RecalcRequest.Reason);
-                if (RecalcRequest.Reason == ENavPathUpdateType::NavigationChanged)
-                {
-                    RegisterActivePath(PinnedPath);
-                }
+
             }
             else
             {
                 //PinnedPath->RePathFailed();
             }
         }
+        SolutionRepathRequests.Reset();
     }
 
 }
