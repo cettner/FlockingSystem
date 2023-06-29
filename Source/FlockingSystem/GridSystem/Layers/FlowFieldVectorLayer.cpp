@@ -18,11 +18,12 @@ void UFlowFieldVectorLayer::ShowTile(UGridTile* InTile)
 
 	if (GetTileVector(InTile, flowvector))
 	{
-		FVector tilecenter = InTile->GetTileCenter();
-		float arrowsize = 500.0f;
-		FVector endpoint = tilecenter + (flowvector * 70.0f);
+		const FVector elevationoffset = FVector(0, 0, 10.0f);
+		const float arrowsize = 500.0f;
+		const FVector startpoint = InTile->GetTileCenter() + elevationoffset;
+		const FVector endpoint = (startpoint + (flowvector * 70.0f));
 
-		DrawDebugDirectionalArrow(GetWorld(),tilecenter, endpoint, arrowsize, FColor::Black, true, -1.0f, 0U, 10.0f);
+		DrawDebugDirectionalArrow(GetWorld(), startpoint, endpoint, arrowsize, FColor::Black, true, -1.0f, 0U, 10.0f);
 	}
 
 

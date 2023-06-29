@@ -20,6 +20,8 @@ class FLOCKINGSYSTEM_API UFlowFieldSolutionLayer : public UGridLayer
 {
 	GENERATED_BODY()
 
+	UFlowFieldSolutionLayer();
+
 public:
 	void SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights = false);
 	void SetGoalLocation(const FVector& InMoveLocation, const bool bRebuildWeights = false);

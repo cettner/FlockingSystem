@@ -7,6 +7,10 @@
 #include "../Navigation/VectorFieldNavigationSystem.h"
 #include "../GameGrid.h"
 
+UFlowFieldSolutionLayer::UFlowFieldSolutionLayer()
+{
+	bIsLayerVisible = true;
+}
 
 void UFlowFieldSolutionLayer::SetGoalTile(const UGridTile* InTile, const bool bRebuildWeights)
 {
@@ -245,7 +249,63 @@ uint32 UFlowFieldSolutionLayer::OnLayerDeactivate()
 
 void UFlowFieldSolutionLayer::OnShowLayer()
 {
+	FlushPersistentDebugLines(GetWorld());
 	VectorLayer->SetLayerVisibility(true);
+	AGameGrid* grid = GetGameGrid();
+	const TSet<UGridTile*> tiles = IntegrationLayer->GetTiles();
+
+	int32 longestside = grid->GetMaxCols() >= grid->GetMaxRows() ? grid->GetMaxCols() : grid->GetMaxRows();
+	const float colorshiftboundary = static_cast<float>(longestside) / 4.0f;
+	//Green to yellow,
+	//Yellow to Red,
+	//Red to Blue,
+
+	const float boundaryone = colorshiftboundary;
+	const float boundarytwo = colorshiftboundary * 2;
+	const float boundarythree = colorshiftboundary * 3;
+	const float boundaryfour = longestside;
+
+	for (UGridTile * const tile : tiles)
+	{
+		float weight;
+		int32 tileid = tile->GetTileID();
+		FLinearColor tilecolor;
+		IntegrationLayer->GetTileWeight(tile, weight);
+
+		if (weight != UNVISITED_TILE_WEIGHT)
+		{
+			// Map the weight value to a range between 0.0 and 1.0
+
+			if (weight < boundaryone)
+			{
+				float NormalizedWeight = FMath::GetMappedRangeValueClamped(FVector2D(0, boundaryone), FVector2D(0.0f, 1.0f), weight);
+				tilecolor = FMath::Lerp(FLinearColor::Green, FLinearColor::Yellow, NormalizedWeight);
+			}
+			else if (weight < boundarytwo)
+			{
+				float NormalizedWeight = FMath::GetMappedRangeValueClamped(FVector2D(boundaryone, boundarytwo), FVector2D(0.0f, 1.0f), weight);
+				tilecolor = FMath::Lerp(FLinearColor::Yellow, FLinearColor::Red, NormalizedWeight);
+			}
+			else if (weight < boundarythree)
+			{
+				float NormalizedWeight = FMath::GetMappedRangeValueClamped(FVector2D(boundarytwo, boundarythree), FVector2D(0.0f, 1.0f), weight);
+				tilecolor = FMath::Lerp(FLinearColor::Red, FLinearColor::Blue, NormalizedWeight);
+			}
+			else
+			{
+				float NormalizedWeight = FMath::GetMappedRangeValueClamped(FVector2D(boundarythree, boundaryfour), FVector2D(0.0f, 1.0f), weight);
+				tilecolor = FMath::Lerp(FLinearColor::Blue, FLinearColor::White, NormalizedWeight);
+			}
+			// Interpolate between green and red based on the normalized weight
+		}
+		else
+		{
+			tilecolor = FLinearColor::Black;
+		}
+
+		grid->SetTileColor(tileid, tilecolor);
+		grid->SetTileVisible(tileid, true);
+	}
 }
 
 void UFlowFieldSolutionLayer::OnHideLayer()
